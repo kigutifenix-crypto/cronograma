@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — Shopping das Academias</title>
+  <meta name="description" content="Sistema de Cronograma de Entregas — Shopping das Academias"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script>
+    (function() {
+      const t = localStorage.getItem('sda-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <style>
+    /* ── Login page ─────────────────────────────────────────── */
+    body { overflow: hidden; }
+
+    /* Animated background */
+    .login-bg {
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 20% 40%, rgba(99,102,241,.15) 0%, transparent 60%),
+                  radial-gradient(ellipse 60% 70% at 80% 80%, rgba(139,92,246,.12) 0%, transparent 60%),
+                  radial-gradient(ellipse 50% 50% at 50% 10%, rgba(6,182,212,.08) 0%, transparent 60%),
+                  var(--bg-base);
+    }
+    .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); opacity: .55;
+      animation: floatOrb linear infinite;
+    }
+    .orb-1 { width:420px;height:420px; background:var(--primary);   left:-100px; top:-80px;  animation-duration:18s; }
+    .orb-2 { width:320px;height:320px; background:var(--secondary); right:-80px; bottom:-60px; animation-duration:22s; animation-direction:reverse; }
+    .orb-3 { width:200px;height:200px; background:var(--accent);    left:40%;    top:60%;    animation-duration:15s; animation-delay:-7s; }
+
+    @keyframes floatOrb {
+      0%  { transform: translate(0,0)    scale(1); }
+      33% { transform: translate(30px,20px) scale(1.06); }
+      66% { transform: translate(-20px,30px) scale(.96); }
+      100%{ transform: translate(0,0)    scale(1); }
+    }
+
+    /* Center container */
+    .login-wrap {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+
+    /* Card */
+    .login-card {
+      width: 100%; max-width: 420px;
+      background: rgba(18,22,39,.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 24px;
+      padding: 40px 36px;
+      box-shadow: 0 25px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(99,102,241,.1);
+      animation: cardIn .5s var(--ease) both;
+    }
+    @keyframes cardIn {
+      from { opacity:0; transform: translateY(24px) scale(.97); }
+      to   { opacity:1; transform: none; }
+    }
+
+    /* Brand */
+    .login-brand {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 14px;
+      margin-bottom: 32px;
+    }
+    .login-logo {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 24px var(--primary-glow);
+      animation: logoPulse 3s ease infinite;
+    }
+    @keyframes logoPulse {
+      0%,100% { box-shadow: 0 8px 24px rgba(99,102,241,.3); }
+      50%      { box-shadow: 0 8px 32px rgba(99,102,241,.55); }
+    }
+    .login-title {
+      text-align: center;
+    }
+    .login-title h1 {
+      font-size: 20px; font-weight: 800;
+      color: var(--text-1); line-height: 1.2;
+    }
+    .login-title p {
+      font-size: 13px; color: var(--text-3); margin-top: 4px;
+    }
+
+    /* Form */
+    .login-form { display: flex; flex-direction: column; gap: 18px; }
+
+    .input-wrapper { position: relative; }
+    .input-icon {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-3); pointer-events: none;
+    }
+    .input-with-icon { padding-left: 42px !important; }
+
+    .btn-login {
+      width: 100%; justify-content: center;
+      padding: 13px;
+      font-size: 15px; font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* Error */
+    .login-error {
+      display: none;
+      background: rgba(248,113,113,.1);
+      border: 1px solid rgba(248,113,113,.25);
+      border-radius: var(--r-md);
+      padding: 10px 14px;
+      color: var(--s-cancelado);
+      font-size: 13.5px;
+      align-items: center; gap: 8px;
+    }
+    .login-error.show { display: flex; }
+
+    /* Footer */
+    .login-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px; color: var(--text-3);
+    }
+
+    /* Password toggle */
+    .pwd-toggle {
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--text-3); padding: 4px;
+      transition: color var(--t-fast);
+    }
+    .pwd-toggle:hover { color: var(--text-2); }
+  </style>
+</head>
+<body>
+  <!-- Background -->
+  <div class="login-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toastContainer"></div>
+
+  <!-- Login Card -->
+  <div class="login-wrap">
+    <div class="login-card">
+
+      <!-- Brand -->
+      <div class="login-brand">
+        <div class="login-logo">
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+            <path d="M7 8h10M7 11h6"/>
+          </svg>
+        </div>
+        <div class="login-title">
+          <h1>Shopping das Academias</h1>
+          <p>Sistema de Cronograma de Entregas</p>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form class="login-form" id="loginForm" onsubmit="handleLogin(event)" novalidate>
+
+        <!-- Error message -->
+        <div class="login-error" id="loginError">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span id="loginErrorMsg">Erro</span>
+        </div>
+
+        <!-- E-mail -->
+        <div class="form-group">
+          <label class="form-label" for="email">E-mail</label>
+          <div class="input-wrapper">
+            <span class="input-icon">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </span>
+            <input id="email" class="form-input input-with-icon"
+              type="email" placeholder="seu@email.com"
+              autocomplete="email" required/>
+          </div>
+        </div>
+
+        <!-- Senha -->
+        <div class="form-group">
+          <label class="form-label" for="password">Senha</label>
+          <div class="input-wrapper">
+            <span class="input-icon">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </span>
+            <input id="password" class="form-input input-with-icon"
+              type="password" placeholder="••••••••"
+              autocomplete="current-password" required/>
+            <button type="button" class="pwd-toggle" id="pwdToggle" onclick="togglePwd()">
+              <svg id="eyeIcon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Botão login -->
+        <button id="loginBtn" class="btn btn-primary btn-login" type="submit">
+          <span id="loginBtnText">Entrar</span>
+          <span id="loginSpinner" class="spinner" style="display:none; border-color:rgba(255,255,255,.3); border-top-color:#fff; width:16px; height:16px;"></span>
+        </button>
+
+      </form>
+
+      <div class="login-footer">
+        &copy; 2025 Shopping das Academias · Todos os direitos reservados
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // ── Verifica sessão ativa ──────────────────────────────────
+    (async () => {
+      initTheme();
+      const session = await getSession();
+      if (session) window.location.href = 'app.html';
+    })();
+
+    // ── Login ──────────────────────────────────────────────────
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn      = document.getElementById('loginBtn');
+      const btnText  = document.getElementById('loginBtnText');
+      const spinner  = document.getElementById('loginSpinner');
+      const errBox   = document.getElementById('loginError');
+      const errMsg   = document.getElementById('loginErrorMsg');
+
+      // Reset erro
+      errBox.classList.remove('show');
+
+      // Loading
+      btn.disabled    = true;
+      btnText.textContent = 'Entrando…';
+      spinner.style.display = 'inline-block';
+
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+      spinner.style.display = 'none';
+      btn.disabled = false;
+      btnText.textContent = 'Entrar';
+
+      if (error) {
+        errMsg.textContent = friendlyError(error);
+        errBox.classList.add('show');
+        // Shake animation
+        document.querySelector('.login-card').style.animation = 'none';
+        document.getElementById('loginForm').style.animation = 'shake .4s ease';
+        setTimeout(() => document.getElementById('loginForm').style.animation = '', 500);
+        return;
+      }
+
+      // Checa se usuário está ativo
+      const profile = await getUserProfile(data.user.id);
+      if (profile && !profile.ativo) {
+        await db.auth.signOut();
+        errMsg.textContent = 'Conta desativada. Entre em contato com o administrador.';
+        errBox.classList.add('show');
+        return;
+      }
+
+      window.location.href = 'app.html';
+    }
+
+    // ── Toggle senha ───────────────────────────────────────────
+    function togglePwd() {
+      const input = document.getElementById('password');
+      const icon  = document.getElementById('eyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;
+      } else {
+        input.type = 'password';
+        icon.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+      }
+    }
+  </script>
+  <style>
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-8px); }
+      40%     { transform: translateX(8px); }
+      60%     { transform: translateX(-5px); }
+      80%     { transform: translateX(5px); }
+    }
+  </style>
+</body>
+</html>

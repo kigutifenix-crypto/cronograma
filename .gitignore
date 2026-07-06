@@ -1,0 +1,24 @@
+# Dependências
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
+.idea/
+
+# Variáveis de ambiente (se usar no futuro)
+.env
+.env.local
+.env.production
+
+# Build
+dist/
+build/
