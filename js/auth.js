@@ -4,14 +4,28 @@
 
 // ── Labels de papéis ────────────────────────────────────────
 const ROLE_LABELS = { admin: 'Administrador', editor: 'Editor', viewer: 'Visualizador' };
-const STATUS_OPTIONS = ['Pendente', 'Agendado', 'Em Rota', 'Entregue', 'Cancelado'];
+const STATUS_OPTIONS = [
+  'Pendente',
+  'Em separação',
+  'Separado',
+  'Aguardando peça',
+  'Em manutenção',
+  'Agendado',
+  'Em Rota',
+  'Entregue',
+  'Cancelado'
+];
 
 const STATUS_META = {
-  'Agendado':  { cls: 'badge-agendado', color: 'var(--s-agendado)' },
-  'Em Rota':   { cls: 'badge-rota',     color: 'var(--s-rota)'     },
-  'Entregue':  { cls: 'badge-entregue', color: 'var(--s-entregue)' },
-  'Cancelado': { cls: 'badge-cancelado',color: 'var(--s-cancelado)'},
-  'Pendente':  { cls: 'badge-pendente', color: 'var(--s-pendente)' },
+  'Agendado':         { cls: 'badge-agendado',        color: 'var(--s-agendado)' },
+  'Em Rota':          { cls: 'badge-rota',            color: 'var(--s-rota)'     },
+  'Entregue':         { cls: 'badge-entregue',        color: 'var(--s-entregue)' },
+  'Cancelado':        { cls: 'badge-cancelado',       color: 'var(--s-cancelado)'},
+  'Pendente':         { cls: 'badge-pendente',        color: 'var(--s-pendente)' },
+  'Em separação':     { cls: 'badge-separacao',       color: 'var(--s-separacao)' },
+  'Separado':         { cls: 'badge-separado',        color: 'var(--s-separado)' },
+  'Aguardando peça':  { cls: 'badge-aguardando-peca', color: 'var(--s-aguardando-peca)' },
+  'Em manutenção':    { cls: 'badge-manutencao',      color: 'var(--s-manutencao)' }
 };
 
 function getStatusMeta(status) {

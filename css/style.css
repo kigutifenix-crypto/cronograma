@@ -37,6 +37,14 @@
   --s-cancelado-bg:rgba(248,113,113,.12);
   --s-pendente:    #a78bfa;
   --s-pendente-bg: rgba(167,139,250,.12);
+  --s-separacao:       #818cf8;
+  --s-separacao-bg:    rgba(129,140,248,.12);
+  --s-separado:        #2dd4bf;
+  --s-separado-bg:     rgba(45,212,191,.12);
+  --s-aguardando-peca: #f97316;
+  --s-aguardando-peca-bg: rgba(249,115,22,.12);
+  --s-manutencao:      #f43f5e;
+  --s-manutencao-bg:   rgba(244,63,94,.12);
 
   --success:  #34d399;
   --danger:   #f87171;
@@ -86,6 +94,10 @@
   --s-entregue-bg: rgba(52,211,153,.10);
   --s-cancelado-bg:rgba(248,113,113,.10);
   --s-pendente-bg: rgba(167,139,250,.10);
+  --s-separacao-bg:    rgba(129,140,248,.10);
+  --s-separado-bg:     rgba(45,212,191,.10);
+  --s-aguardando-peca-bg: rgba(249,115,22,.10);
+  --s-manutencao-bg:   rgba(244,63,94,.10);
 
   --shadow-sm:   0 2px 8px  rgba(99,102,241,.06);
   --shadow-md:   0 4px 20px rgba(99,102,241,.09);
@@ -281,6 +293,34 @@ button { font-family: inherit; }
   border: 1px solid rgba(167,139,250,.2);
 }
 .badge-pendente .badge-dot { background: var(--s-pendente); }
+
+.badge-separacao {
+  color: var(--s-separacao);
+  background: var(--s-separacao-bg);
+  border: 1px solid rgba(129,140,248,.2);
+}
+.badge-separacao .badge-dot { background: var(--s-separacao); }
+
+.badge-separado {
+  color: var(--s-separado);
+  background: var(--s-separado-bg);
+  border: 1px solid rgba(45,212,191,.2);
+}
+.badge-separado .badge-dot { background: var(--s-separado); }
+
+.badge-aguardando-peca {
+  color: var(--s-aguardando-peca);
+  background: var(--s-aguardando-peca-bg);
+  border: 1px solid rgba(249,115,22,.2);
+}
+.badge-aguardando-peca .badge-dot { background: var(--s-aguardando-peca); }
+
+.badge-manutencao {
+  color: var(--s-manutencao);
+  background: var(--s-manutencao-bg);
+  border: 1px solid rgba(244,63,94,.2);
+}
+.badge-manutencao .badge-dot { background: var(--s-manutencao); }
 
 .badge-admin  { color:#818cf8; background:rgba(129,140,248,.12); border:1px solid rgba(129,140,248,.2); }
 .badge-editor { color:#34d399; background:rgba(52,211,153,.12);  border:1px solid rgba(52,211,153,.2); }
