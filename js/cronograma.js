@@ -156,17 +156,17 @@ function renderTable(rows) {
   tbody.innerHTML = rows.map(r => {
     const sm = getStatusMeta(r.status || 'Pendente');
     return `
-    <tr class="tbl-row" data-id="${r.id}">
+    <tr class="tbl-row" data-id="${r.id}" onclick="openViewModal('${r.id}')" title="Ver detalhes">
       <td class="td-date">${fmtDate(r.data)}</td>
       <td><span class="pedido-chip">${r.pedido || '—'}</span></td>
       <td class="td-cliente">${r.cliente || '—'}</td>
       <td>${r.rota || '—'}</td>
       <td><span class="placa-chip">${(r.placa || '—').toUpperCase()}</span></td>
       <td>${r.motorista || '—'}</td>
-      <td class="td-frete">${fmtCurrency(r.frete)}</td>
+      <td>${freteBadge(r.frete)}</td>
       <td>
         <button class="badge ${sm.cls} badge-clickable editor-action"
-          onclick="quickStatus('${r.id}','${r.status || 'Pendente'}')"
+          onclick="event.stopPropagation(); quickStatus('${r.id}','${r.status || 'Pendente'}')"
           title="Clique para alterar status"
           style="display:${canEdit ? 'inline-flex' : 'none'}">
           <span class="badge-dot"></span>${r.status || 'Pendente'}
@@ -175,7 +175,7 @@ function renderTable(rows) {
           <span class="badge-dot"></span>${r.status || 'Pendente'}
         </span>
       </td>
-      <td class="td-actions">
+      <td class="td-actions" onclick="event.stopPropagation()">
         ${canEdit ? `<button class="btn btn-ghost btn-icon editor-action" onclick="openEditModal('${r.id}')" data-tip="Editar">${iconEdit()}</button>` : ''}
         ${canDelete ? `<button class="btn btn-ghost btn-icon admin-action text-danger" onclick="confirmDelete('${r.id}','${escHtml(r.pedido || '')}','${escHtml(r.cliente || '')}','cronograma')" data-tip="Excluir">${iconTrash()}</button>` : ''}
       </td>
@@ -199,14 +199,14 @@ function renderAguardando() {
   document.getElementById('aguardandoCount').textContent = aguardandoList.length;
 
   list.innerHTML = aguardandoList.map(item => `
-    <div class="ag-card" data-id="${item.id}">
+    <div class="ag-card" data-id="${item.id}" onclick="openViewAguardando('${item.id}')" title="Ver detalhes">
       <div class="ag-card-header">
         <span class="ag-pedido">📦 ${item.pedido || 'S/N'}</span>
-        ${canEdit ? `<button class="btn btn-ghost btn-icon ag-del" onclick="confirmDelete('${item.id}','${escHtml(item.pedido || '')}','${escHtml(item.cliente || '')}','aguardando')">${iconTrash()}</button>` : ''}
+        ${canEdit ? `<button class="btn btn-ghost btn-icon ag-del" onclick="event.stopPropagation(); confirmDelete('${item.id}','${escHtml(item.pedido || '')}','${escHtml(item.cliente || '')}','aguardando')">${iconTrash()}</button>` : ''}
       </div>
-      <div class="ag-cliente">${item.cliente || '—'}</div>
+      <div class="ag-cliente">${item.cliente || '\u2014'}</div>
       ${item.observacoes ? `<div class="ag-obs">${item.observacoes}</div>` : ''}
-      ${canEdit ? `<button class="btn btn-success btn-sm ag-agendar" onclick="agendarItem('${item.id}','${escHtml(item.pedido || '')}','${escHtml(item.cliente || '')}')">
+      ${canEdit ? `<button class="btn btn-success btn-sm ag-agendar" onclick="event.stopPropagation(); agendarItem('${item.id}','${escHtml(item.pedido || '')}','${escHtml(item.cliente || '')}')">
         ${iconCheck()} Agendar
       </button>` : ''}
     </div>
@@ -256,7 +256,7 @@ function openEditModal(id) {
   document.getElementById('fieldRota').value = row.rota || '';
   document.getElementById('fieldPlaca').value = row.placa || '';
   document.getElementById('fieldMotorista').value = row.motorista || '';
-  document.getElementById('fieldFrete').value = row.frete || '';
+  document.getElementById('fieldFrete').value = row.frete || 'CIF';
   document.getElementById('fieldStatus').value = row.status || 'Pendente';
   document.getElementById('fieldObs').value = row.observacoes || '';
 
@@ -275,7 +275,7 @@ async function saveRow() {
     rota: document.getElementById('fieldRota').value.trim(),
     placa: document.getElementById('fieldPlaca').value.trim().toUpperCase(),
     motorista: document.getElementById('fieldMotorista').value.trim(),
-    frete: parseFloat(document.getElementById('fieldFrete').value) || 0,
+    frete: document.getElementById('fieldFrete').value || 'CIF',
     status: document.getElementById('fieldStatus').value || 'Pendente',
     observacoes: document.getElementById('fieldObs').value.trim(),
   };
@@ -384,10 +384,11 @@ async function executeDelete() {
 // ── Helpers ───────────────────────────────────────────────────
 function resetForm() {
   ['fieldData', 'fieldPedido', 'fieldCliente', 'fieldRota',
-    'fieldPlaca', 'fieldMotorista', 'fieldFrete', 'fieldObs'].forEach(id => {
+    'fieldPlaca', 'fieldMotorista', 'fieldObs'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+  document.getElementById('fieldFrete').value = 'CIF';
   document.getElementById('fieldStatus').value = 'Pendente';
 }
 
@@ -410,3 +411,200 @@ function iconTrash() {
 function iconCheck() {
   return `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;
 }
+
+// Renderiza badge CIF ou FOB
+function freteBadge(val) {
+  const v = (val || 'CIF').toUpperCase();
+  const cls = v === 'FOB' ? 'frete-fob' : 'frete-cif';
+  return `<span class="${cls}">${v}</span>`;
+}
+
+// ── Modal de detalhes: Cronograma ─────────────────────────────
+let _viewingId = null;
+let _viewingType = null; // 'cronograma' | 'aguardando'
+
+function openViewModal(id) {
+  const row = allRows.find(r => r.id === id);
+  if (!row) return;
+  _viewingId = id;
+  _viewingType = 'cronograma';
+
+  const sm = getStatusMeta(row.status || 'Pendente');
+  const canEdit = isEditor(userProfile?.papel || 'viewer');
+
+  document.getElementById('viewModalTitle').textContent =
+    `Pedido ${row.pedido || 'S/N'}`;
+
+  // Mostra ou esconde botão Editar
+  const editBtn = document.getElementById('viewEditBtn');
+  if (editBtn) editBtn.style.display = canEdit ? '' : 'none';
+
+  function df(label, value, extra = '') {
+    const isEmpty = !value || value === '\u2014';
+    return `
+      <div class="detail-field">
+        <span class="detail-label">${label}</span>
+        <div class="detail-value ${isEmpty ? 'empty' : ''} ${extra}">${isEmpty ? 'N\u00e3o informado' : value}</div>
+      </div>`;
+  }
+
+  document.getElementById('viewModalContent').innerHTML = `
+    ${df('Data', fmtDate(row.data))}
+    ${df('N\u00ba Pedido', row.pedido ? `<span class="pedido-chip">${row.pedido}</span>` : '', '')}
+    ${df('Cliente', row.cliente, 'detail-full')}
+    ${df('Rota', row.rota, 'detail-full')}
+    <div class="detail-field">
+      <span class="detail-label">Placa</span>
+      <div class="detail-value ${!row.placa ? 'empty' : 'mono'}">${row.placa ? row.placa.toUpperCase() : 'N\u00e3o informado'}</div>
+    </div>
+    ${df('Motorista', row.motorista)}
+    <div class="detail-field">
+      <span class="detail-label">Frete</span>
+      <div class="detail-value">${freteBadge(row.frete)}</div>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Status</span>
+      <div class="detail-value">
+        <span class="badge ${sm.cls}" style="pointer-events:none">
+          <span class="badge-dot"></span>${row.status || 'Pendente'}
+        </span>
+      </div>
+    </div>
+    <div class="detail-field detail-full">
+      <span class="detail-label">Observa\u00e7\u00f5es</span>
+      <div class="detail-value detail-obs ${!row.observacoes ? 'empty' : ''}">${row.observacoes || 'Nenhuma observa\u00e7\u00e3o'}</div>
+    </div>
+    <div class="detail-field detail-full" style="margin-top:4px">
+      <span class="detail-label">Criado em</span>
+      <div class="detail-value" style="font-size:12px;color:var(--text-3)">${row.criado_em ? new Date(row.criado_em).toLocaleString('pt-BR') : '\u2014'}</div>
+    </div>
+  `;
+
+  openModal('viewModal');
+}
+
+// ── Modal de detalhes: Aguardando ────────────────────────────
+function openViewAguardando(id) {
+  const item = aguardandoList.find(i => i.id === id);
+  if (!item) return;
+  _viewingId = id;
+  _viewingType = 'aguardando';
+
+  const canEdit = isEditor(userProfile?.papel || 'viewer');
+
+  document.getElementById('viewModalTitle').textContent =
+    `\u23f3 Aguardando: ${item.pedido || 'S/N'}`;
+
+  const editBtn = document.getElementById('viewEditBtn');
+  if (editBtn) editBtn.style.display = 'none'; // Aguardando n\u00e3o tem editar direto
+
+  function df(label, value, extra = '') {
+    const isEmpty = !value;
+    return `
+      <div class="detail-field ${extra}">
+        <span class="detail-label">${label}</span>
+        <div class="detail-value ${isEmpty ? 'empty' : ''}">${isEmpty ? 'N\u00e3o informado' : value}</div>
+      </div>`;
+  }
+
+  document.getElementById('viewModalContent').innerHTML = `
+    ${df('N\u00ba Pedido', item.pedido ? `<span class="pedido-chip">${item.pedido}</span>` : '')}
+    ${df('Cliente', item.cliente)}
+    <div class="detail-field detail-full">
+      <span class="detail-label">Observa\u00e7\u00f5es</span>
+      <div class="detail-value detail-obs ${!item.observacoes ? 'empty' : ''}">${item.observacoes || 'Nenhuma observa\u00e7\u00e3o'}</div>
+    </div>
+    <div class="detail-field detail-full" style="margin-top:4px">
+      <span class="detail-label">Adicionado em</span>
+      <div class="detail-value" style="font-size:12px;color:var(--text-3)">${item.adicionado_em ? new Date(item.adicionado_em).toLocaleString('pt-BR') : '\u2014'}</div>
+    </div>
+    ${canEdit ? `
+    <div class="detail-field detail-full">
+      <button class="btn btn-success" style="width:100%" onclick="closeModal('viewModal'); agendarItem('${item.id}','${escHtml(item.pedido||'')}','${escHtml(item.cliente||'')}')">
+        ${iconCheck()} Agendar este pedido
+      </button>
+    </div>` : ''}
+  `;
+
+  openModal('viewModal');
+}
+
+// Abre editar a partir do modal de visualiza\u00e7\u00e3o
+function _openEditFromView() {
+  if (_viewingType === 'cronograma' && _viewingId) {
+    closeModal('viewModal');
+    openEditModal(_viewingId);
+  }
+}
+
+// ── Tela Cheia / Fullscreen ───────────────────────────────────
+function toggleFullscreenElement(selector, buttonId, iconId) {
+  const el = document.querySelector(selector);
+  if (!el) return;
+
+  const isFull = document.fullscreenElement === el;
+  const icon = document.getElementById(iconId);
+  const btn = document.getElementById(buttonId);
+
+  if (!isFull) {
+    if (el.requestFullscreen) {
+      el.requestFullscreen()
+        .then(() => {
+          if (icon) icon.innerHTML = `<path d="M4 14h6v-6M20 10h-6v6M14 10l7-7M10 14l-7 7"/>`;
+          if (btn) {
+            btn.setAttribute('data-tip', 'Sair da tela cheia');
+            btn.setAttribute('title', 'Sair da tela cheia');
+          }
+        })
+        .catch(err => console.warn('Request fullscreen error:', err));
+    }
+  } else {
+    exitNativeFullscreen();
+  }
+}
+
+function exitNativeFullscreen() {
+  if (document.exitFullscreen && document.fullscreenElement) {
+    document.exitFullscreen().catch(err => console.warn('Exit fullscreen error:', err));
+  }
+}
+
+// Escuta a altera\u00e7\u00e3o do fullscreen nativo do navegador para resetar \u00edcones/bot\u00f5es
+document.addEventListener('fullscreenchange', () => {
+  const tableIcon = document.getElementById('fullscreenIcon');
+  const tableBtn = document.getElementById('btnFullscreen');
+  const sidebarIcon = document.getElementById('fullscreenIconSidebar');
+  const sidebarBtn = document.getElementById('btnFullscreenSidebar');
+
+  const fsElement = document.fullscreenElement;
+
+  // Reset table wrap fullscreen controls
+  if (fsElement !== document.getElementById('tableWrap')) {
+    if (tableIcon) tableIcon.innerHTML = `<path d="M15 3h6v6M9 21H3v-6M21 15v6h-6M3 9V3h6"/>`;
+    if (tableBtn) {
+      tableBtn.setAttribute('data-tip', 'Tela cheia');
+      tableBtn.setAttribute('title', 'Tela cheia');
+    }
+  } else {
+    if (tableIcon) tableIcon.innerHTML = `<path d="M4 14h6v-6M20 10h-6v6M14 10l7-7M10 14l-7 7"/>`;
+    if (tableBtn) {
+      tableBtn.setAttribute('data-tip', 'Sair da tela cheia');
+      tableBtn.setAttribute('title', 'Sair da tela cheia');
+    }
+  }
+
+  // Reset sidebar fullscreen controls
+  if (fsElement !== document.getElementById('appSidebar')) {
+    if (sidebarIcon) sidebarIcon.innerHTML = `<path d="M15 3h6v6M9 21H3v-6M21 15v6h-6M3 9V3h6"/>`;
+    if (sidebarBtn) {
+      sidebarBtn.setAttribute('data-tip', 'Tela cheia');
+      sidebarBtn.setAttribute('title', 'Tela cheia');
+    }
+  } else {
+    if (sidebarIcon) sidebarIcon.innerHTML = `<path d="M4 14h6v-6M20 10h-6v6M14 10l7-7M10 14l-7 7"/>`;
+    if (sidebarBtn) {
+      sidebarBtn.setAttribute('data-tip', 'Sair da tela cheia');
+      sidebarBtn.setAttribute('title', 'Sair da tela cheia');
+    }
+  }
+});

@@ -62,6 +62,11 @@
       box-shadow: 0 25px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(99,102,241,.1);
       animation: cardIn .5s var(--ease) both;
     }
+    [data-theme="light"] .login-card {
+      background: rgba(255,255,255,.88);
+      border-color: rgba(99,102,241,.12);
+      box-shadow: 0 25px 60px rgba(99,102,241,.12), 0 0 0 1px rgba(99,102,241,.08);
+    }
     @keyframes cardIn {
       from { opacity:0; transform: translateY(24px) scale(.97); }
       to   { opacity:1; transform: none; }
@@ -71,7 +76,7 @@
     .login-brand {
       display: flex; flex-direction: column;
       align-items: center; gap: 14px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
     .login-logo {
       width: 64px; height: 64px;
@@ -85,9 +90,7 @@
       0%,100% { box-shadow: 0 8px 24px rgba(99,102,241,.3); }
       50%      { box-shadow: 0 8px 32px rgba(99,102,241,.55); }
     }
-    .login-title {
-      text-align: center;
-    }
+    .login-title { text-align: center; }
     .login-title h1 {
       font-size: 20px; font-weight: 800;
       color: var(--text-1); line-height: 1.2;
@@ -96,8 +99,34 @@
       font-size: 13px; color: var(--text-3); margin-top: 4px;
     }
 
-    /* Form */
-    .login-form { display: flex; flex-direction: column; gap: 18px; }
+    /* Tab switcher */
+    .tab-switcher {
+      display: flex;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 3px;
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      flex: 1; padding: 8px;
+      border: none; border-radius: calc(var(--r-md) - 2px);
+      background: transparent;
+      color: var(--text-3);
+      font-family: inherit; font-size: 13.5px; font-weight: 600;
+      cursor: pointer;
+      transition: background var(--t-base), color var(--t-base), box-shadow var(--t-base);
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    /* Forms */
+    .auth-form { display: flex; flex-direction: column; gap: 16px; }
+    .auth-panel { display: none; }
+    .auth-panel.active { display: flex; flex-direction: column; gap: 16px; }
 
     .input-wrapper { position: relative; }
     .input-icon {
@@ -114,18 +143,26 @@
       margin-top: 4px;
     }
 
-    /* Error */
-    .login-error {
+    /* Error / Success */
+    .login-error, .login-success {
       display: none;
-      background: rgba(248,113,113,.1);
-      border: 1px solid rgba(248,113,113,.25);
       border-radius: var(--r-md);
       padding: 10px 14px;
-      color: var(--s-cancelado);
       font-size: 13.5px;
       align-items: center; gap: 8px;
     }
-    .login-error.show { display: flex; }
+    .login-error {
+      background: rgba(248,113,113,.1);
+      border: 1px solid rgba(248,113,113,.25);
+      color: var(--s-cancelado);
+    }
+    .login-success {
+      background: rgba(52,211,153,.1);
+      border: 1px solid rgba(52,211,153,.25);
+      color: var(--success);
+      flex-direction: column; align-items: flex-start; gap: 4px;
+    }
+    .login-error.show, .login-success.show { display: flex; }
 
     /* Footer */
     .login-footer {
@@ -143,6 +180,23 @@
       transition: color var(--t-fast);
     }
     .pwd-toggle:hover { color: var(--text-2); }
+
+    /* Divider */
+    .form-divider {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text-3); font-size: 12px;
+    }
+    .form-divider::before, .form-divider::after {
+      content:''; flex:1; height:1px; background: var(--border);
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-8px); }
+      40%     { transform: translateX(8px); }
+      60%     { transform: translateX(-5px); }
+      80%     { transform: translateX(5px); }
+    }
   </style>
 </head>
 <body>
@@ -156,9 +210,9 @@
   <!-- Toast -->
   <div id="toastContainer"></div>
 
-  <!-- Login Card -->
+  <!-- Card -->
   <div class="login-wrap">
-    <div class="login-card">
+    <div class="login-card" id="loginCard">
 
       <!-- Brand -->
       <div class="login-brand">
@@ -175,10 +229,15 @@
         </div>
       </div>
 
-      <!-- Form -->
-      <form class="login-form" id="loginForm" onsubmit="handleLogin(event)" novalidate>
+      <!-- Tab switcher -->
+      <div class="tab-switcher">
+        <button id="tabLogin" class="tab-btn active" onclick="switchTab('login')">Entrar</button>
+        <button id="tabRegister" class="tab-btn" onclick="switchTab('register')">Criar Conta</button>
+      </div>
 
-        <!-- Error message -->
+      <!-- ── PAINEL LOGIN ── -->
+      <div id="panelLogin" class="auth-panel active">
+
         <div class="login-error" id="loginError">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -186,54 +245,163 @@
           <span id="loginErrorMsg">Erro</span>
         </div>
 
-        <!-- E-mail -->
-        <div class="form-group">
-          <label class="form-label" for="email">E-mail</label>
-          <div class="input-wrapper">
-            <span class="input-icon">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-              </svg>
-            </span>
-            <input id="email" class="form-input input-with-icon"
-              type="email" placeholder="seu@email.com"
-              autocomplete="email" required/>
+        <form id="loginForm" onsubmit="handleLogin(event)" novalidate
+          style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- E-mail -->
+          <div class="form-group">
+            <label class="form-label" for="loginEmail">E-mail</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </span>
+              <input id="loginEmail" class="form-input input-with-icon"
+                type="email" placeholder="seu@email.com"
+                autocomplete="email" required/>
+            </div>
           </div>
+
+          <!-- Senha -->
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">Senha</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </span>
+              <input id="loginPassword" class="form-input input-with-icon"
+                type="password" placeholder="••••••••"
+                autocomplete="current-password" required/>
+              <button type="button" class="pwd-toggle" onclick="togglePwd('loginPassword','eyeLogin')">
+                <svg id="eyeLogin" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button id="loginBtn" class="btn btn-primary btn-login" type="submit">
+            <span id="loginBtnText">Entrar</span>
+            <span id="loginSpinner" class="spinner"
+              style="display:none;border-color:rgba(255,255,255,.3);border-top-color:#fff;width:16px;height:16px;"></span>
+          </button>
+        </form>
+      </div>
+
+      <!-- ── PAINEL CADASTRO ── -->
+      <div id="panelRegister" class="auth-panel">
+
+        <!-- Erro -->
+        <div class="login-error" id="regError">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span id="regErrorMsg">Erro</span>
         </div>
 
-        <!-- Senha -->
-        <div class="form-group">
-          <label class="form-label" for="password">Senha</label>
-          <div class="input-wrapper">
-            <span class="input-icon">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-            </span>
-            <input id="password" class="form-input input-with-icon"
-              type="password" placeholder="••••••••"
-              autocomplete="current-password" required/>
-            <button type="button" class="pwd-toggle" id="pwdToggle" onclick="togglePwd()">
-              <svg id="eyeIcon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-          </div>
+        <!-- Sucesso -->
+        <div class="login-success" id="regSuccess">
+          <strong style="display:flex;align-items:center;gap:6px;">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Conta criada com sucesso!
+          </strong>
+          <span style="font-size:13px;">Você já pode entrar com seu e-mail e senha.</span>
         </div>
 
-        <!-- Botão login -->
-        <button id="loginBtn" class="btn btn-primary btn-login" type="submit">
-          <span id="loginBtnText">Entrar</span>
-          <span id="loginSpinner" class="spinner" style="display:none; border-color:rgba(255,255,255,.3); border-top-color:#fff; width:16px; height:16px;"></span>
-        </button>
+        <form id="registerForm" onsubmit="handleRegister(event)" novalidate
+          style="display:flex;flex-direction:column;gap:16px;">
 
-      </form>
+          <!-- Nome -->
+          <div class="form-group">
+            <label class="form-label" for="regNome">Nome completo</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              </span>
+              <input id="regNome" class="form-input input-with-icon"
+                type="text" placeholder="Seu nome completo"
+                autocomplete="name" required/>
+            </div>
+          </div>
+
+          <!-- E-mail -->
+          <div class="form-group">
+            <label class="form-label" for="regEmail">E-mail</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </span>
+              <input id="regEmail" class="form-input input-with-icon"
+                type="email" placeholder="seu@email.com"
+                autocomplete="email" required/>
+            </div>
+          </div>
+
+          <!-- Senha -->
+          <div class="form-group">
+            <label class="form-label" for="regPassword">Senha</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </span>
+              <input id="regPassword" class="form-input input-with-icon"
+                type="password" placeholder="Mínimo 6 caracteres"
+                autocomplete="new-password" required/>
+              <button type="button" class="pwd-toggle" onclick="togglePwd('regPassword','eyeReg')">
+                <svg id="eyeReg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Confirmar senha -->
+          <div class="form-group">
+            <label class="form-label" for="regConfirm">Confirmar senha</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </span>
+              <input id="regConfirm" class="form-input input-with-icon"
+                type="password" placeholder="Repita a senha"
+                autocomplete="new-password" required/>
+            </div>
+          </div>
+
+          <button id="regBtn" class="btn btn-primary btn-login" type="submit">
+            <span id="regBtnText">Criar Conta</span>
+            <span id="regSpinner" class="spinner"
+              style="display:none;border-color:rgba(255,255,255,.3);border-top-color:#fff;width:16px;height:16px;"></span>
+          </button>
+
+        </form>
+
+        <p style="font-size:12px;color:var(--text-3);text-align:center;margin-top:4px;">
+          Após o cadastro você terá acesso como <strong>Visualizador</strong>.<br/>
+          Um administrador pode elevar suas permissões.
+        </p>
+      </div>
 
       <div class="login-footer">
-        &copy; 2025 Shopping das Academias · Todos os direitos reservados
+        &copy; 2025 Shopping das Academias &middot; Todos os direitos reservados
       </div>
     </div>
   </div>
@@ -243,29 +411,41 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    // ── Verifica sessão ativa ──────────────────────────────────
+    // ── Inicializa ─────────────────────────────────────────────
     (async () => {
       initTheme();
       const session = await getSession();
       if (session) window.location.href = 'app.html';
     })();
 
-    // ── Login ──────────────────────────────────────────────────
+    // ── Alterna abas ───────────────────────────────────────────
+    function switchTab(tab) {
+      const isLogin = tab === 'login';
+
+      document.getElementById('tabLogin').classList.toggle('active', isLogin);
+      document.getElementById('tabRegister').classList.toggle('active', !isLogin);
+      document.getElementById('panelLogin').classList.toggle('active', isLogin);
+      document.getElementById('panelRegister').classList.toggle('active', !isLogin);
+
+      // Limpa erros ao trocar de aba
+      document.getElementById('loginError').classList.remove('show');
+      document.getElementById('regError').classList.remove('show');
+      document.getElementById('regSuccess').classList.remove('show');
+    }
+
+    // ── LOGIN ──────────────────────────────────────────────────
     async function handleLogin(e) {
       e.preventDefault();
-      const email    = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
+      const email    = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
       const btn      = document.getElementById('loginBtn');
       const btnText  = document.getElementById('loginBtnText');
       const spinner  = document.getElementById('loginSpinner');
       const errBox   = document.getElementById('loginError');
       const errMsg   = document.getElementById('loginErrorMsg');
 
-      // Reset erro
       errBox.classList.remove('show');
-
-      // Loading
-      btn.disabled    = true;
+      btn.disabled = true;
       btnText.textContent = 'Entrando…';
       spinner.style.display = 'inline-block';
 
@@ -278,14 +458,12 @@
       if (error) {
         errMsg.textContent = friendlyError(error);
         errBox.classList.add('show');
-        // Shake animation
-        document.querySelector('.login-card').style.animation = 'none';
+        document.getElementById('loginCard').style.animation = 'none';
         document.getElementById('loginForm').style.animation = 'shake .4s ease';
         setTimeout(() => document.getElementById('loginForm').style.animation = '', 500);
         return;
       }
 
-      // Checa se usuário está ativo
       const profile = await getUserProfile(data.user.id);
       if (profile && !profile.ativo) {
         await db.auth.signOut();
@@ -297,10 +475,82 @@
       window.location.href = 'app.html';
     }
 
+    // ── CADASTRO ───────────────────────────────────────────────
+    async function handleRegister(e) {
+      e.preventDefault();
+      const nome     = document.getElementById('regNome').value.trim();
+      const email    = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const confirm  = document.getElementById('regConfirm').value;
+      const btn      = document.getElementById('regBtn');
+      const btnText  = document.getElementById('regBtnText');
+      const spinner  = document.getElementById('regSpinner');
+      const errBox   = document.getElementById('regError');
+      const errMsg   = document.getElementById('regErrorMsg');
+      const success  = document.getElementById('regSuccess');
+
+      errBox.classList.remove('show');
+      success.classList.remove('show');
+
+      // Validações
+      if (!nome || nome.length < 2) {
+        errMsg.textContent = 'Por favor, informe seu nome completo.';
+        errBox.classList.add('show'); return;
+      }
+      if (password.length < 6) {
+        errMsg.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+        errBox.classList.add('show'); return;
+      }
+      if (password !== confirm) {
+        errMsg.textContent = 'As senhas não coincidem.';
+        errBox.classList.add('show'); return;
+      }
+
+      btn.disabled = true;
+      btnText.textContent = 'Criando conta…';
+      spinner.style.display = 'inline-block';
+
+      const { data, error } = await db.auth.signUp({
+        email,
+        password,
+        options: { data: { nome } }
+      });
+
+      spinner.style.display = 'none';
+      btn.disabled = false;
+      btnText.textContent = 'Criar Conta';
+
+      if (error) {
+        errMsg.textContent = friendlyError(error);
+        errBox.classList.add('show');
+        return;
+      }
+
+      // Atualiza perfil com o nome (trigger cria com defaults)
+      if (data?.user) {
+        await db.from('profiles').upsert({
+          id: data.user.id,
+          nome,
+          email,
+          papel: 'viewer',
+          ativo: true,
+        }, { onConflict: 'id' });
+      }
+
+      // Exibe mensagem de sucesso
+      success.classList.add('show');
+      document.getElementById('registerForm').reset();
+
+      // Redireciona após 2s se não precisar confirmar e-mail
+      if (data?.session) {
+        setTimeout(() => { window.location.href = 'app.html'; }, 1500);
+      }
+    }
+
     // ── Toggle senha ───────────────────────────────────────────
-    function togglePwd() {
-      const input = document.getElementById('password');
-      const icon  = document.getElementById('eyeIcon');
+    function togglePwd(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon  = document.getElementById(iconId);
       if (input.type === 'password') {
         input.type = 'text';
         icon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;

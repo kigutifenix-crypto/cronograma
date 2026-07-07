@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS public.cronograma (
   rota         text DEFAULT '',
   placa        text DEFAULT '',
   motorista    text DEFAULT '',
-  frete        numeric(10,2) DEFAULT 0,
+  frete        text DEFAULT 'CIF',
   status       text DEFAULT 'Pendente',
   observacoes  text DEFAULT '',
   criado_em    timestamptz DEFAULT now(),
