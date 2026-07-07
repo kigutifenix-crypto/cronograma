@@ -1,30 +1,35 @@
-# 📦 Cronograma de Entregas — Shopping das Academias
+# 📅 Cronograma de Entregas — Shopping das Academias
 
-Sistema web de gerenciamento de cronograma de entregas com autenticação, controle de acesso por papéis e sincronização em tempo real.
+[![Supabase Auth](https://img.shields.io/badge/Supabase-Auth-green.svg)](https://supabase.com/)
+[![Supabase Realtime](https://img.shields.io/badge/Supabase-Realtime-green.svg)](https://supabase.com/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue.svg)](https://www.postgresql.org/)
+[![HTML5](https://img.shields.io/badge/HTML5-Vanilla-orange.svg)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![CSS3](https://img.shields.io/badge/CSS3-Vanilla-blue.svg)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
----
-
-## ✨ Funcionalidades
-
-- 🔐 **Autenticação** segura com e-mail e senha via Supabase Auth
-- 👥 **Três níveis de acesso**: Administrador, Editor e Visualizador
-- 📋 **Cronograma de entregas** com tabela completa e editável
-- ⏳ **Painel "Aguardando Definição"** para pedidos ainda sem data/rota definidas
-- 🔄 **Sincronização em tempo real** — alterações aparecem instantaneamente para todos os usuários
-- 🌙 **Modo claro / escuro** com persistência de preferência
-- 🔍 **Filtros** por status, data e busca textual
-- 🔔 **Notificações toast** para feedback de ações
-- 📱 Layout responsivo para diferentes tamanhos de tela
+Sistema Web profissional para o controle, agendamento e gerenciamento de rotas e cronograma de entregas físicas. O aplicativo foi desenhado para operação interna rápida, contando com controle de acesso baseado em funções (RBAC), sincronização de dados em tempo real e painéis organizacionais (como o quadro de entregas pendentes).
 
 ---
 
-## 🖥️ Telas
+## 🎯 Principais Funcionalidades
 
-| Tela | Arquivo | Acesso |
-|---|---|---|
-| Login | `index.html` | Público |
-| Cronograma | `app.html` | Todos os usuários autenticados |
-| Administração | `admin.html` | Somente Administradores |
+- 🔐 **Autenticação & Controle de Sessão:** Autenticação segura via e-mail e senha gerenciada pelo Supabase Auth.
+- 👥 **Controle de Acesso por Papéis (RBAC):** Três níveis distintos de permissões: **Administrador**, **Editor** e **Visualizador**.
+- 📋 **Tabela de Cronograma Editável:** Quadro intuitivo para agendamento rápido de pedidos, motoristas, rotas e fretes.
+- ⏳ **Painel "Aguardando Definição":** Gaveta lateral para triagem de novos pedidos que ainda não possuem data ou rotas definidas.
+- 🔄 **Sincronização em Tempo Real:** Alterações feitas por qualquer usuário são refletidas de forma instantânea para todos os dispositivos conectados (via Supabase Realtime).
+- 🌙 **Tema Light/Dark Dinâmico:** Layout adaptável com persistência da preferência do usuário localmente.
+- 🔍 **Filtros e Busca Avançada:** Filtros rápidos de status, calendário de datas e busca por texto livre.
+
+---
+
+## 🖥️ Telas do Sistema
+
+| Tela | Arquivo de Origem | Nível de Acesso Requerido |
+| :--- | :--- | :--- |
+| **Login** | [`index.html`](file:///C:/Users/adm/Documents/MEGA/VSCODE/cronograma/index.html) | Público / Visitantes |
+| **Cronograma Geral** | [`app.html`](file:///C:/Users/adm/Documents/MEGA/VSCODE/cronograma/app.html) | Todos os usuários autenticados |
+| **Gestão de Usuários** | [`admin.html`](file:///C:/Users/adm/Documents/MEGA/VSCODE/cronograma/admin.html) | Somente Administradores (`admin`) |
 
 ---
 
@@ -32,38 +37,21 @@ Sistema web de gerenciamento de cronograma de entregas com autenticação, contr
 
 ```
 cronograma/
-├── index.html              # Tela de login
-├── app.html                # Cronograma principal
-├── admin.html              # Painel de administração
-│
+├── index.html              # Interface e controle da tela de login
+├── app.html                # Interface principal do cronograma e filtros
+├── admin.html              # Painel administrativo de controle de usuários
 ├── css/
-│   └── style.css           # Design system (dark/light theme, componentes)
-│
+│   └── style.css           # Estilização global, variáveis de temas (light/dark) e layout responsivo
 ├── js/
-│   ├── supabase-config.js  # ⚠️ Credenciais do Supabase (configurar)
-│   ├── auth.js             # Autenticação, permissões, utilitários
-│   ├── cronograma.js       # Lógica do cronograma (CRUD + real-time)
-│   └── admin.js            # Gerenciamento de usuários
-│
+│   ├── supabase-config.js  # Definições de chaves de conexão (URL e Anon Key)
+│   ├── auth.js             # Lógica de controle de sessão, cookies e proteção de rotas
+│   ├── cronograma.js       # Gerenciamento de eventos CRUD e sincronização realtime
+│   └── admin.js            # Lógica de criação, edição e desativação de usuários (profiles)
 ├── supabase/
-│   └── schema.sql          # SQL completo para criar as tabelas
-│
-├── SETUP.md                # Guia de configuração do Supabase
+│   └── schema.sql          # Script SQL para criação das tabelas, triggers e RLS no banco
+├── SETUP.md                # Guia detalhado de configuração do Supabase
 └── README.md               # Este arquivo
 ```
-
----
-
-## 🛠️ Tecnologias
-
-| Camada | Tecnologia |
-|---|---|
-| Frontend | HTML5 + CSS3 (Vanilla) + JavaScript ES2020 |
-| Estilo | CSS Custom Properties, Google Fonts (Inter) |
-| Backend / Banco | [Supabase](https://supabase.com) (PostgreSQL) |
-| Autenticação | Supabase Auth (email + senha) |
-| Tempo real | Supabase Realtime (postgres_changes) |
-| Servidor local | [serve](https://github.com/vercel/serve) (npx) |
 
 ---
 
@@ -71,178 +59,99 @@ cronograma/
 
 ### Pré-requisitos
 
-- Conta gratuita no [Supabase](https://supabase.com)
-- Node.js instalado (para rodar o servidor local)
-- Navegador moderno (Chrome, Edge, Firefox)
+- Um projeto ativo na plataforma do [Supabase](https://supabase.com)
+- **Node.js** instalado localmente para rodar o servidor de desenvolvimento estático
 
-### Passo 1 — Criar projeto no Supabase
+### Passo 1: Criar o Projeto no Supabase
+1. Faça login no Supabase Console e crie um novo projeto (ex: `cronograma-academias`).
+2. Defina a região como **South America (São Paulo)** para otimizar os tempos de resposta.
 
-1. Acesse [supabase.com](https://supabase.com) e faça login
-2. Clique em **New Project**
-3. Escolha um nome (ex: `cronograma-academias`)
-4. Selecione a região **South America (São Paulo)**
-5. Aguarde a criação (1-2 minutos)
+### Passo 2: Inicializar o Banco de Dados (Schema)
+1. No painel do seu projeto Supabase, clique em **SQL Editor** e depois em **New Query**.
+2. Cole todo o conteúdo do arquivo [`supabase/schema.sql`](file:///C:/Users/adm/Documents/MEGA/VSCODE/cronograma/supabase/schema.sql).
+3. Clique em **Run ▶** para criar as tabelas (`profiles`, `cronograma`, `aguardando`), as triggers de atualização de profiles, as funções customizadas de criação de usuários e as políticas de segurança.
 
-### Passo 2 — Criar as tabelas
+### Passo 3: Configurar as Credenciais
+1. Vá em **Project Settings → API** no Supabase e obtenha a **Project URL** e a **anon/public key**.
+2. Abra o arquivo [`js/supabase-config.js`](file:///C:/Users/adm/Documents/MEGA/VSCODE/cronograma/js/supabase-config.js) e insira as credenciais:
+   ```javascript
+   const SUPABASE_URL  = 'https://SEU_PROJETO.supabase.co';
+   const SUPABASE_ANON_KEY = 'sua_anon_key_publica_aqui';
+   ```
+   > ⚠️ **IMPORTANTE:** Nunca utilize a chave `service_role` em códigos executados no navegador. O controle de segurança do banco é garantido via RLS (Row Level Security) usando a chave pública.
 
-1. No painel do Supabase, acesse **SQL Editor → New query**
-2. Cole o conteúdo de `supabase/schema.sql`
-3. Clique em **Run ▶**
+### Passo 4: Configurações de Fluxo de Cadastro
+1. No Supabase, acesse **Authentication → Provider Settings → Email**.
+2. **Desative** a opção "Confirm email" para acelerar o cadastro de novos usuários operacionais internos.
 
-> O schema cria as tabelas `profiles`, `cronograma` e `aguardando`, além das funções, triggers e políticas de segurança (RLS).
+### Passo 5: Atribuição do Primeiro Administrador
+1. Em **Authentication → Users**, clique em **Add User** e crie um login para o primeiro usuário.
+2. Acesse o sistema uma primeira vez com essas credenciais para disparar o gatilho automático de perfil.
+3. No **SQL Editor** do Supabase, execute o seguinte comando para promovê-lo a admin:
+   ```sql
+   UPDATE public.profiles
+   SET papel = 'admin'
+   WHERE email = 'email-do-usuario@exemplo.com';
+   ```
 
-### Passo 3 — Configurar credenciais
-
-1. No Supabase, vá em **Project Settings → API**
-2. Copie a **Project URL** e a **anon/public key**
-3. Abra `js/supabase-config.js` e substitua:
-
-```javascript
-const SUPABASE_URL  = 'https://SEU_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'sua_anon_key_aqui';
-```
-
-> ⚠️ **Nunca use a `service_role` key no frontend.** Ela ignora todas as regras de segurança.
-
-### Passo 4 — Configurar autenticação
-
-1. No Supabase, acesse **Authentication → Settings**
-2. Recomendado para uso interno: **desative** "Confirm email"
-
-### Passo 5 — Criar o primeiro Administrador
-
-1. No Supabase, vá em **Authentication → Users → Add user**
-2. Crie o usuário com e-mail e senha
-3. Faça login no sistema para gerar o perfil automaticamente
-4. No Supabase **SQL Editor**, execute:
-
-```sql
-UPDATE public.profiles
-SET papel = 'admin'
-WHERE email = 'seu@email.com';
-```
-
-5. Faça logout e login novamente — você terá acesso de Admin
-
-### Passo 6 — Iniciar o sistema
-
+### Passo 6: Executar Localmente
+Inicie um servidor web estático na raiz do projeto:
 ```bash
-# Na pasta do projeto
 npx serve . --listen 3000
 ```
-
-Acesse: **[http://localhost:3000](http://localhost:3000)**
-
----
-
-## 👥 Papéis de Usuário
-
-| Papel | Visualizar | Adicionar/Editar | Excluir | Gerenciar Usuários |
-|---|:---:|:---:|:---:|:---:|
-| **Administrador** | ✅ | ✅ | ✅ | ✅ |
-| **Editor** | ✅ | ✅ | ❌ | ❌ |
-| **Visualizador** | ✅ | ❌ | ❌ | ❌ |
+Abra o navegador em [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## 📋 Colunas do Cronograma
+## 👥 Matriz de Permissões (RBAC)
 
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| **Data** | Data | Data prevista da entrega |
-| **Pedido** | Texto | Número/código do pedido |
-| **Cliente** | Texto | Nome do cliente |
-| **Rota** | Texto | Rota de entrega (ex: SP → RJ) |
-| **Placa** | Texto | Placa do veículo (maiúsculas) |
-| **Motorista** | Texto | Nome do motorista responsável |
-| **Frete** | Monetário | Valor do frete em R$ |
-| **Status** | Seleção | Estado atual da entrega |
-
-### Status disponíveis
-
-| Status | Cor | Descrição |
-|---|---|---|
-| 🟣 **Pendente** | Roxo | Aguardando confirmação |
-| 🟡 **Agendado** | Âmbar | Data e rota definidas |
-| 🔵 **Em Rota** | Azul | Veículo a caminho |
-| 🟢 **Entregue** | Verde | Entrega concluída |
-| 🔴 **Cancelado** | Vermelho | Entrega cancelada |
-
-> 💡 Clique diretamente no badge de status para avançar para o próximo estado (apenas Admin e Editor).
+| Ação no Sistema | Administrador (`admin`) | Editor (`editor`) | Visualizador (`leitor`) |
+| :--- | :---: | :---: | :---: |
+| Visualizar Cronograma e Painéis | ✅ | ✅ | ✅ |
+| Adicionar e Editar Entregas | ✅ | ✅ | ❌ |
+| Excluir Entregas | ✅ | ❌ | ❌ |
+| Gerenciar Usuários (Criar/Editar/Desativar) | ✅ | ❌ | ❌ |
 
 ---
 
-## ⏳ Painel Aguardando Definição
+## 📋 Atributos do Cronograma
 
-O painel lateral exibe pedidos que ainda não foram agendados.
+O banco de dados armazena os seguintes dados por entrega:
+- **Data:** Dia previsto para entrega física.
+- **Pedido:** Código indentificador da venda.
+- **Cliente:** Nome ou Razão Social do cliente.
+- **Rota:** Trajeto previsto (ex: *São Paulo → Rio de Janeiro*).
+- **Placa:** Placa do veículo encarregado do envio.
+- **Motorista:** Nome do motorista.
+- **Frete:** Valor pago pelo envio formatado em R$ (Monetário).
+- **Status:** Badge com a situação atual.
 
-**Fluxo recomendado:**
-1. Recebeu um novo pedido? Clique em **+** no painel lateral para adicioná-lo
-2. Quando a data/rota estiver confirmada, clique em **→ Agendar**
-3. O modal abrirá com pedido e cliente já preenchidos
-4. Preencha os campos restantes e salve — o item sai automaticamente do painel
-
----
-
-## 🗄️ Estrutura do Banco de Dados
-
-```sql
--- Perfis e papéis dos usuários
-profiles (id, nome, email, papel, ativo, criado_em)
-
--- Registros do cronograma
-cronograma (id, data, pedido, cliente, rota, placa, motorista, frete, status, observacoes, criado_em, atualizado_em, criado_por)
-
--- Pedidos aguardando definição
-aguardando (id, pedido, cliente, observacoes, adicionado_em, adicionado_por)
-```
-
-### Segurança (Row Level Security)
-
-Todas as tabelas usam RLS do Supabase. As políticas garantem:
-- Apenas usuários autenticados leem dados
-- Apenas Admin e Editor criam/editam registros
-- Apenas Admin exclui registros do cronograma
-- Apenas Admin gerencia perfis de usuários
+### Estados de Entrega (Status)
+- 🟣 **Pendente:** Aguardando início do processamento.
+- 🟡 **Agendado:** Rota e data definidas na grade.
+- 🔵 **Em Rota:** O veículo saiu para entrega.
+- 🟢 **Entregue:** Entrega física concluída com sucesso.
+- 🔴 **Cancelado:** Envio cancelado pela administração.
 
 ---
 
-## 🔧 Gerenciamento de Usuários (Admin)
+## ⏳ Fluxo do Painel "Aguardando Definição"
 
-Acesse `admin.html` para:
-
-- 📋 **Listar** todos os usuários cadastrados
-- ➕ **Criar** novos usuários (nome, e-mail, senha, papel)
-- ✏️ **Alterar** o papel de qualquer usuário
-- 🔒 **Ativar/Desativar** contas de usuários
-- 🔍 **Buscar** usuários por nome ou e-mail
-
-> A criação de usuários usa um cliente Supabase temporário independente, garantindo que o Admin **não seja deslogado** durante o processo.
+Para pedidos que chegam à expedição sem datas consolidadas:
+1. Cadastre-o na gaveta lateral clicando em **"+"** no painel de pendências.
+2. O pedido ficará retido até que a logística confirme a data/placa.
+3. Quando confirmado, o operador clica em **"→ Agendar"** diretamente no item.
+4. O formulário abre pré-preenchido; finalize os dados de transporte e salve. O item sairá automaticamente da fila de espera e entrará na grade do cronograma principal.
 
 ---
 
-## 🐛 Solução de Problemas
+## 🔒 Segurança de Dados (Row Level Security - RLS)
 
-| Sintoma | Causa provável | Solução |
-|---|---|---|
-| Login não funciona | Credenciais erradas | Verificar e-mail e senha no painel Supabase |
-| Tabela não carrega | SQL não foi executado | Executar `supabase/schema.sql` no SQL Editor |
-| Erro 400 ao salvar | Valor inválido no campo | Verificar campos obrigatórios e formato do frete |
-| Sem acesso admin | Papel não definido | Executar `UPDATE profiles SET papel = 'admin'...` |
-| Usuário confirmando e-mail | Email confirm ativado | Desativar em Auth → Settings → Email confirmations |
-| Dados não atualizam em tempo real | Realtime não habilitado | Habilitar Realtime nas tabelas no painel Supabase |
-
----
-
-## 🔒 Segurança
-
-- A `anon key` é segura para uso no frontend quando o RLS está ativo
-- **Nunca** exponha a `service_role key` em código cliente
-- Todas as operações passam pelas políticas RLS do PostgreSQL
-- Sessões são gerenciadas pelo Supabase Auth com JWT
+Todas as tabelas do PostgreSQL utilizam **RLS**. Nenhuma alteração de escrita pode ser realizada diretamente sem um token de sessão JWT válido emitido pelo Supabase. Triggers em PostgreSQL auditam e gerenciam as relações de alteração de forma nativa e protegida.
 
 ---
 
 ## 📄 Licença
 
-Uso interno — Shopping das Academias © 2025. Todos os direitos reservados.
+Este projeto é de uso restrito e exclusivo do **Shopping das Academias**.
+Todos os direitos reservados, 2025.

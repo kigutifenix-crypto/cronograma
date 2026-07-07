@@ -93,32 +93,41 @@ ALTER TABLE public.cronograma ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.aguardando ENABLE ROW LEVEL SECURITY;
 
 -- PROFILES
+DROP POLICY IF EXISTS "profiles_select" ON public.profiles;
 CREATE POLICY "profiles_select" ON public.profiles
   FOR SELECT USING (id = auth.uid() OR public.get_user_role() = 'admin');
 
+DROP POLICY IF EXISTS "profiles_insert" ON public.profiles;
 CREATE POLICY "profiles_insert" ON public.profiles
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "profiles_update_admin" ON public.profiles;
 CREATE POLICY "profiles_update_admin" ON public.profiles
   FOR UPDATE USING (public.get_user_role() = 'admin');
 
 -- CRONOGRAMA
+DROP POLICY IF EXISTS "cronograma_select" ON public.cronograma;
 CREATE POLICY "cronograma_select" ON public.cronograma
   FOR SELECT USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "cronograma_insert" ON public.cronograma;
 CREATE POLICY "cronograma_insert" ON public.cronograma
   FOR INSERT WITH CHECK (public.get_user_role() IN ('admin', 'editor'));
 
+DROP POLICY IF EXISTS "cronograma_update" ON public.cronograma;
 CREATE POLICY "cronograma_update" ON public.cronograma
   FOR UPDATE USING (public.get_user_role() IN ('admin', 'editor'));
 
+DROP POLICY IF EXISTS "cronograma_delete" ON public.cronograma;
 CREATE POLICY "cronograma_delete" ON public.cronograma
   FOR DELETE USING (public.get_user_role() = 'admin');
 
 -- AGUARDANDO
+DROP POLICY IF EXISTS "aguardando_select" ON public.aguardando;
 CREATE POLICY "aguardando_select" ON public.aguardando
   FOR SELECT USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "aguardando_all" ON public.aguardando;
 CREATE POLICY "aguardando_all" ON public.aguardando
   FOR ALL USING (public.get_user_role() IN ('admin', 'editor'));
 
@@ -126,3 +135,30 @@ CREATE POLICY "aguardando_all" ON public.aguardando
 -- APÓS CRIAR SUA PRIMEIRA CONTA, DEFINA-A COMO ADMIN:
 -- UPDATE public.profiles SET papel = 'admin' WHERE email = 'seu-email@aqui.com';
 -- ============================================================
+
+-- ============================================================
+-- ATIVAR SINCRONIZAÇÃO EM TEMPO REAL (REALTIME) DE FORMA SEGURA
+-- ============================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_rel pr
+    JOIN pg_publication p ON p.oid = pr.prpubid
+    JOIN pg_class c ON c.oid = pr.prrelid
+    WHERE p.pubname = 'supabase_realtime' AND c.relname = 'cronograma'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.cronograma;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_rel pr
+    JOIN pg_publication p ON p.oid = pr.prpubid
+    JOIN pg_class c ON c.oid = pr.prrelid
+    WHERE p.pubname = 'supabase_realtime' AND c.relname = 'aguardando'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.aguardando;
+  END IF;
+END;
+$$;
+
+

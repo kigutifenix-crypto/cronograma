@@ -124,3 +124,28 @@ cronograma/
 - Certifique-se de que o `schema.sql` foi executado com sucesso
 - Verifique se as credenciais em `supabase-config.js` estão corretas
 - Abra o console do navegador (F12) para ver erros detalhados
+
+---
+
+## 🔄 Ativação da Sincronização em Tempo Real (Realtime)
+
+Como as tabelas do Supabase não têm a sincronização em tempo real ativada por padrão, é necessário habilitá-las para que a página atualize automaticamente em todos os dispositivos quando um novo registro for inserido, alterado ou excluído.
+
+### Opção 1: Pelo SQL Editor (Mais rápido)
+1. Vá no painel do Supabase.
+2. Acesse o **SQL Editor** no menu esquerdo.
+3. Clique em **"New query"**.
+4. Copie, cole e execute o seguinte comando:
+   ```sql
+   ALTER PUBLICATION supabase_realtime ADD TABLE public.cronograma;
+   ALTER PUBLICATION supabase_realtime ADD TABLE public.aguardando;
+   ```
+5. Clique em **Run** (▶).
+
+### Opção 2: Pela interface do painel (GUI)
+1. Vá no painel do Supabase.
+2. No menu lateral esquerdo, vá em **Database** -> **Replication**.
+3. Na linha da publicação `supabase_realtime` (geralmente sob a tabela "Publications"), clique no botão para editar as tabelas associadas.
+4. Marque ou ative a chavinha para as tabelas `cronograma` e `aguardando`.
+5. Salve as alterações.
+
