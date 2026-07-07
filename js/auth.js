@@ -13,6 +13,8 @@ const STATUS_OPTIONS = [
   'Agendado',
   'Em Rota',
   'Entregue',
+  'Concluído',
+  'Retirado',
   'Cancelado'
 ];
 
@@ -20,6 +22,8 @@ const STATUS_META = {
   'Agendado':         { cls: 'badge-agendado',        color: 'var(--s-agendado)' },
   'Em Rota':          { cls: 'badge-rota',            color: 'var(--s-rota)'     },
   'Entregue':         { cls: 'badge-entregue',        color: 'var(--s-entregue)' },
+  'Concluído':        { cls: 'badge-concluido',       color: 'var(--s-concluido)' },
+  'Retirado':         { cls: 'badge-retirado',        color: 'var(--s-retirado)'  },
   'Cancelado':        { cls: 'badge-cancelado',       color: 'var(--s-cancelado)'},
   'Pendente':         { cls: 'badge-pendente',        color: 'var(--s-pendente)' },
   'Em separação':     { cls: 'badge-separacao',       color: 'var(--s-separacao)' },

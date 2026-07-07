@@ -127,10 +127,24 @@ O banco de dados armazena os seguintes dados por entrega:
 - **Status:** Badge com a situação atual.
 
 ### Estados de Entrega (Status)
+
+Os status estão organizados por etapas do fluxo operacional:
+
+#### 📦 Preparação
 - 🟣 **Pendente:** Aguardando início do processamento.
-- 🟡 **Agendado:** Rota e data definidas na grade.
-- 🔵 **Em Rota:** O veículo saiu para entrega.
-- 🟢 **Entregue:** Entrega física concluída com sucesso.
+- 🔵 **Em separação:** Pedido em processo de separação física no estoque.
+- 🟢 **Separado:** Separação de itens concluída e pronta para expedição.
+- 🟠 **Aguardando peça:** Separação suspensa aguardando peças/itens em falta.
+- 🔴 **Em manutenção:** Mercadoria ou veículo retido para reparos.
+
+#### 🚚 Transporte
+- 🟡 **Agendado:** Rota e data de entrega definidas na grade.
+- 🔵 **Em Rota:** O veículo saiu da expedição para a rota de entrega.
+
+#### ✅ Finalizado
+- 🟢 **Entregue:** Entrega física realizada com sucesso.
+- 🟢 **Concluído:** Pedido e trâmites finalizados.
+- ⚪ **Retirado:** Mercadoria retirada no local pelo próprio cliente ou transportadora.
 - 🔴 **Cancelado:** Envio cancelado pela administração.
 
 ---

@@ -557,15 +557,23 @@
         <!-- Filtro Status -->
         <select id="statusFilter" class="filter-select">
           <option value="">Todos os status</option>
-          <option>Pendente</option>
-          <option>Em separação</option>
-          <option>Separado</option>
-          <option>Aguardando peça</option>
-          <option>Em manutenção</option>
-          <option>Agendado</option>
-          <option>Em Rota</option>
-          <option>Entregue</option>
-          <option>Cancelado</option>
+          <optgroup label="Preparação">
+            <option>Pendente</option>
+            <option>Em separação</option>
+            <option>Separado</option>
+            <option>Aguardando peça</option>
+            <option>Em manutenção</option>
+          </optgroup>
+          <optgroup label="Transporte">
+            <option>Agendado</option>
+            <option>Em Rota</option>
+          </optgroup>
+          <optgroup label="Finalizado">
+            <option>Entregue</option>
+            <option>Concluído</option>
+            <option>Retirado</option>
+            <option>Cancelado</option>
+          </optgroup>
         </select>
 
         <!-- Datas -->
@@ -735,15 +743,23 @@
         <div class="form-group">
           <label class="form-label" for="fieldStatus">Status</label>
           <select id="fieldStatus" class="form-input form-select">
-            <option>Pendente</option>
-            <option>Em separação</option>
-            <option>Separado</option>
-            <option>Aguardando peça</option>
-            <option>Em manutenção</option>
-            <option>Agendado</option>
-            <option>Em Rota</option>
-            <option>Entregue</option>
-            <option>Cancelado</option>
+            <optgroup label="Preparação">
+              <option>Pendente</option>
+              <option>Em separação</option>
+              <option>Separado</option>
+              <option>Aguardando peça</option>
+              <option>Em manutenção</option>
+            </optgroup>
+            <optgroup label="Transporte">
+              <option>Agendado</option>
+              <option>Em Rota</option>
+            </optgroup>
+            <optgroup label="Finalizado">
+              <option>Entregue</option>
+              <option>Concluído</option>
+              <option>Retirado</option>
+              <option>Cancelado</option>
+            </optgroup>
           </select>
         </div>
         <!-- Observações -->
