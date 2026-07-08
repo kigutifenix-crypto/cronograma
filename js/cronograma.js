@@ -9,6 +9,9 @@ let aguardandoList = [];
 let editingRowId = null;
 let realtimeSub = null;
 let aguardandoSub = null;
+let activeTab = 'cronograma'; // 'cronograma' | 'arquivo'
+
+const ARCHIVED_STATUS = ['Entregue', 'Concluído', 'Retirado', 'Cancelado'];
 
 // ── Inicializa app ───────────────────────────────────────────
 async function initApp() {
@@ -69,6 +72,7 @@ async function loadCronograma() {
     return;
   }
   allRows = data || [];
+  updateTabCounts();
   applyFilters();
 }
 
@@ -99,6 +103,38 @@ function setupRealtime() {
     .subscribe();
 }
 
+// ── Abas (Tab Navigation) ───────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+
+  // Atualizar botoes de aba
+  document.getElementById('tabCronograma')?.classList.toggle('active', tab === 'cronograma');
+  document.getElementById('tabCronograma')?.setAttribute('aria-selected', tab === 'cronograma');
+  document.getElementById('tabArquivo')?.classList.toggle('active', tab === 'arquivo');
+  document.getElementById('tabArquivo')?.setAttribute('aria-selected', tab === 'arquivo');
+
+  // Mostrar/ocultar botao Novo Registro (nao faz sentido no arquivo)
+  const btnNovo = document.getElementById('btnNovo');
+  if (btnNovo) btnNovo.style.display = tab === 'arquivo' ? 'none' : '';
+
+  // Limpar filtros ao trocar de aba para evitar confusao
+  ['searchInput', 'statusFilter', 'dateFrom', 'dateTo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  applyFilters();
+}
+
+function updateTabCounts() {
+  const active = allRows.filter(r => !ARCHIVED_STATUS.includes(r.status || 'Pendente'));
+  const archived = allRows.filter(r => ARCHIVED_STATUS.includes(r.status || 'Pendente'));
+  const elC = document.getElementById('tabCountCronograma');
+  const elA = document.getElementById('tabCountArquivo');
+  if (elC) elC.textContent = active.length;
+  if (elA) elA.textContent = archived.length;
+}
+
 // ── Filtros ───────────────────────────────────────────────────
 function setupFilters() {
   ['searchInput', 'statusFilter', 'dateFrom', 'dateTo'].forEach(id => {
@@ -113,7 +149,13 @@ function applyFilters() {
   const from = document.getElementById('dateFrom')?.value || '';
   const to = document.getElementById('dateTo')?.value || '';
 
-  const filtered = allRows.filter(r => {
+  // Pre-filtra pelo conjunto de status da aba ativa
+  const tabRows = allRows.filter(r => {
+    const isArchived = ARCHIVED_STATUS.includes(r.status || 'Pendente');
+    return activeTab === 'arquivo' ? isArchived : !isArchived;
+  });
+
+  const filtered = tabRows.filter(r => {
     const matchQ = !q || [r.pedido, r.cliente, r.motorista, r.rota, r.placa]
       .some(v => (v || '').toLowerCase().includes(q));
     const matchS = !status || r.status === status;
@@ -155,8 +197,9 @@ function renderTable(rows) {
 
   tbody.innerHTML = rows.map(r => {
     const sm = getStatusMeta(r.status || 'Pendente');
+    const archivedCls = activeTab === 'arquivo' ? ' archived-row' : '';
     return `
-    <tr class="tbl-row" data-id="${r.id}" onclick="openViewModal('${r.id}')" title="Ver detalhes">
+    <tr class="tbl-row${archivedCls}" data-id="${r.id}" onclick="openViewModal('${r.id}')" title="Ver detalhes">
       <td class="td-date">${fmtDate(r.data)}</td>
       <td><span class="pedido-chip">${r.pedido || '—'}</span></td>
       <td class="td-cliente">${r.cliente || '—'}</td>
