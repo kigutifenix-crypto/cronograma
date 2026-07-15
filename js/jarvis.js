@@ -245,14 +245,24 @@ Variáveis Globais que você pode ler se precisar:
 
 Regras de Geração do Código:
 - NUNCA utilize variáveis não declaradas como 'pedido', 'status', 'rota' etc.
-- Você deve passar os valores reais DIRETAMENTE como strings, por exemplo:
-  Correto: jarvisHelpers.updateStatus('5909', 'Cancelado');
-  Incorreto: jarvisHelpers.updateStatus(pedido, status); (gerará erro de variável indefinida!)
-- Se o usuário falar "cancelar", "fechar", "sair" sem especificar um pedido, você pode chamar "closeModal('rowModal'); closeModal('viewModal'); closeModal('deleteModal');".
-- Para alterar tema: "toggleTheme();"
-- Para criar novo registro: "openAddModal();"
-- Para limpar a busca/filtro: "jarvisHelpers.clearAll();"
-- Para ir para tela cheia: "toggleFullscreenElement('#tableWrap', 'btnFullscreen', 'fullscreenIcon');"
+- Passe sempre os valores diretamente como strings ou números nas chamadas.
+- EXEMPLOS DE CÓDIGO CORRETOS PARA CADA INTENÇÃO:
+  * Para consultar/ver/saber o status do pedido 5909:
+    "code": "jarvisHelpers.viewPedido('5909');", "speech": "Aqui está o status do pedido 5909."
+  * Para alterar o status do pedido 5909 para Entregue:
+    "code": "jarvisHelpers.updateStatus('5909', 'Entregue');", "speech": "Pedido 5909 alterado para Entregue."
+  * Para buscar/filtrar por cliente João:
+    "code": "jarvisHelpers.search('João');", "speech": "Filtrando pedidos do João."
+  * Para limpar filtros de busca:
+    "code": "jarvisHelpers.clearAll();", "speech": "Filtros limpos."
+  * Para mudar de aba:
+    "code": "switchTab('arquivo');", "speech": "Abrindo aba arquivo."
+  * Para fechar telas/modais abertos:
+    "code": "closeModal('rowModal'); closeModal('viewModal');", "speech": "Telas fechadas."
+  * Para mudar o tema do site:
+    "code": "toggleTheme();", "speech": "Tema alterado."
+  * Para entrar/sair de tela cheia:
+    "code": "toggleFullscreenElement('#tableWrap', 'btnFullscreen', 'fullscreenIcon');", "speech": "Tela cheia alternada."
 
 Retorne APENAS o JSON, sem markdown ou explicações.`;
 
