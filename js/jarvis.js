@@ -57,6 +57,7 @@ function initJarvis() {
         showToast('Erro ao atualizar status', 'error');
       } else {
         showToast(`Pedido ${pedido} atualizado para ${status}`, 'success');
+        _jarvisSay(`Pedido ${pedido} atualizado para ${status}.`);
         await loadCronograma();
       }
     },
@@ -68,6 +69,9 @@ function initJarvis() {
         return;
       }
       openViewModal(row.id);
+      const statusText = row.status || 'Pendente';
+      const clienteText = row.cliente ? `do cliente ${row.cliente}` : '';
+      _jarvisSay(`O status do pedido ${pedido} ${clienteText} é: ${statusText}.`);
     },
     editPedido: (pedido) => {
       const row = allRows.find(r => String(r.pedido) === String(pedido));
