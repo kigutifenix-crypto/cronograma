@@ -6,7 +6,7 @@ const JARVIS_KEY_STORAGE  = 'jarvis-gemini-key';
 const JARVIS_WAKE_WORD    = 'jarvis';
 const GEMINI_MODEL        = 'gemini-2.0-flash';
 const GEMINI_API_BASE     = 'https://generativelanguage.googleapis.com/v1beta/models';
-const GEMINI_DEFAULT_KEY  = 'AQ.Ab8RN6JxtIp37UvxjuC3m3sKAdL6s5tQXf9VCf8IQUOweGkyJA';
+// Chave padrão carregada do arquivo js/jarvis-config.js (ignorado pelo .gitignore)
 
 // ── Estado interno ────────────────────────────────────────────
 let _recognition   = null;
@@ -17,8 +17,8 @@ let _jarvisReady   = false;
 
 // ── Inicialização ─────────────────────────────────────────────
 function initJarvis() {
-  // Carrega key: localStorage tem prioridade, senão usa a chave padrão
-  _geminiKey = localStorage.getItem(JARVIS_KEY_STORAGE) || GEMINI_DEFAULT_KEY;
+  // Carrega key: localStorage tem prioridade, senão usa chave do jarvis-config.js
+  _geminiKey = localStorage.getItem(JARVIS_KEY_STORAGE) || (window.JARVIS_GEMINI_KEY || '');
 
   // Verifica suporte à Web Speech API
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;

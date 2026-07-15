@@ -22,3 +22,6 @@ desktop.ini
 # Build
 dist/
 build/
+
+# Jarvis — chave da API (nunca vai para o GitHub)
+js/jarvis-config.js
