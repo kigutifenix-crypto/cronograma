@@ -243,15 +243,30 @@ APIs e Funções Globais Disponíveis na página:
 12. toggleFullscreenElement('#tableWrap', 'btnFullscreen', 'fullscreenIcon') -> Tela cheia
 
 Variáveis Globais que você pode ler se precisar:
-- allRows: array contendo todos os pedidos atuais { id, pedido, cliente, motorista, rota, placa, status }
-- aguardandoList: array de pedidos aguardando agendamento { id, pedido, cliente }
+- allRows: array contendo todos os pedidos atuais. Cada pedido é um objeto com estes campos exatos:
+  * pedido (número do pedido)
+  * cliente (nome do cliente)
+  * motorista (nome do motorista)
+  * rota (rota de entrega)
+  * placa (placa do veículo)
+  * status (status atual)
+  * observacoes (observações do registro)
+  * data (data no formato 'YYYY-MM-DD', você pode formatá-la usando a função global fmtDate(row.data))
+- aguardandoList: array de pedidos aguardando agendamento { id, pedido, cliente, observacoes }
 - activeTab: string 'cronograma' ou 'arquivo'
 
 Regras de Geração do Código:
 - NUNCA utilize variáveis não declaradas como 'pedido', 'status', 'rota' etc.
 - Passe sempre os valores diretamente como strings ou números nas chamadas.
+- Para responder perguntas gerais sobre os dados de um pedido (data, motorista, rota, observações, cliente etc.), escreva um código JS que localize o pedido em allRows e use a função _jarvisSay() para falar a resposta exata.
 - EXEMPLOS DE CÓDIGO CORRETOS PARA CADA INTENÇÃO:
-  * Para consultar/ver/saber o status do pedido 5909:
+  * Para saber/perguntar a data do pedido 5909:
+    "code": "const row = allRows.find(r => String(r.pedido) === '5909'); if (row) { _jarvisSay('A data do pedido 5909 é ' + fmtDate(row.data)); } else { _jarvisSay('Pedido 5909 não encontrado.'); }", "speech": "Buscando a data do pedido..."
+  * Para saber/perguntar quem é o motorista do pedido 5909:
+    "code": "const row = allRows.find(r => String(r.pedido) === '5909'); if (row) { _jarvisSay('O motorista do pedido 5909 é ' + (row.motorista || 'não informado')); } else { _jarvisSay('Pedido não encontrado.'); }", "speech": "Buscando motorista..."
+  * Para saber/perguntar a rota ou destino do pedido 5909:
+    "code": "const row = allRows.find(r => String(r.pedido) === '5909'); if (row) { _jarvisSay('A rota do pedido 5909 é ' + (row.rota || 'não informada')); } else { _jarvisSay('Pedido não encontrado.'); }", "speech": "Buscando rota..."
+  * Para consultar/ver/saber o status do pedido 5909 (abrindo detalhes):
     "code": "jarvisHelpers.viewPedido('5909');", "speech": "Aqui está o status do pedido 5909."
   * Para alterar o status do pedido 5909 para Entregue:
     "code": "jarvisHelpers.updateStatus('5909', 'Entregue');", "speech": "Pedido 5909 alterado para Entregue."
