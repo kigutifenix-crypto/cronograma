@@ -42,7 +42,78 @@ function initJarvis() {
 
   _jarvisReady = true;
   _updateJarvisUI('off');
-  // Chave padrão já disponível — sem necessidade de configuração inicial
+
+  // Inicializa helpers globais para o Jarvis executar ações no DOM/Supabase
+  window.jarvisHelpers = {
+    updateStatus: async (pedido, status) => {
+      const row = allRows.find(r => String(r.pedido) === String(pedido));
+      if (!row) {
+        showToast(`Pedido ${pedido} não encontrado`, 'warning');
+        _jarvisSay(`Não encontrei o pedido ${pedido}.`);
+        return;
+      }
+      const { error } = await db.from('cronograma').update({ status }).eq('id', row.id);
+      if (error) {
+        showToast('Erro ao atualizar status', 'error');
+      } else {
+        showToast(`Pedido ${pedido} atualizado para ${status}`, 'success');
+        await loadCronograma();
+      }
+    },
+    viewPedido: (pedido) => {
+      const row = allRows.find(r => String(r.pedido) === String(pedido));
+      if (!row) {
+        showToast(`Pedido ${pedido} não encontrado`, 'warning');
+        _jarvisSay(`Não encontrei o pedido ${pedido}.`);
+        return;
+      }
+      openViewModal(row.id);
+    },
+    editPedido: (pedido) => {
+      const row = allRows.find(r => String(r.pedido) === String(pedido));
+      if (!row) {
+        showToast(`Pedido ${pedido} não encontrado`, 'warning');
+        _jarvisSay(`Não encontrei o pedido ${pedido}.`);
+        return;
+      }
+      openEditModal(row.id);
+    },
+    deletePedido: (pedido) => {
+      const row = allRows.find(r => String(r.pedido) === String(pedido));
+      if (!row) {
+        showToast(`Pedido ${pedido} não encontrado`, 'warning');
+        _jarvisSay(`Não encontrei o pedido ${pedido}.`);
+        return;
+      }
+      confirmDelete(row.id, row.pedido, row.cliente, 'cronograma');
+    },
+    agendarAguardando: (pedido) => {
+      const item = aguardandoList.find(i => String(i.pedido) === String(pedido));
+      if (!item) {
+        showToast(`Pedido ${pedido} não está aguardando`, 'warning');
+        _jarvisSay(`Não encontrei o pedido ${pedido} na lista de espera.`);
+        return;
+      }
+      agendarItem(item.id, item.pedido, item.cliente);
+    },
+    search: (query) => {
+      const el = document.getElementById('searchInput');
+      if (el) {
+        el.value = query;
+        applyFilters();
+      }
+    },
+    filterStatus: (status) => {
+      const el = document.getElementById('statusFilter');
+      if (el) {
+        el.value = status;
+        applyFilters();
+      }
+    },
+    clearAll: () => {
+      clearFilters();
+    }
+  };
 }
 
 // ── Toggle microfone ──────────────────────────────────────────
@@ -84,6 +155,12 @@ function _stopListening() {
   _setOverlay('hide');
 }
 
+function _stopMicrophone() {
+  try { _recognition.stop(); } catch (_) {}
+  _isListening = false;
+  _updateJarvisUI('off');
+}
+
 // ── Processamento de fala ─────────────────────────────────────
 function _onSpeechResult(event) {
   let interim = '';
@@ -102,9 +179,25 @@ function _onSpeechResult(event) {
     _setOverlay('show', 'Ouvindo...', text);
   }
 
-  // Só processa resultado final que contenha a palavra de ativação
-  if (final && final.toLowerCase().includes(JARVIS_WAKE_WORD) && !_isBusy) {
+  if (!final) return;
+
+  // ── Comandos de parar (sem precisar da IA) ───────────────────
+  const STOP_WORDS = ['para', 'parar', 'para de ouvir', 'desliga', 'desligar',
+                      'off', 'stop', 'chega', 'obrigado jarvis', 'pode parar'];
+  const hasWake = final.toLowerCase().includes(JARVIS_WAKE_WORD);
+  const hasStop = STOP_WORDS.some(w => final.toLowerCase().includes(w));
+
+  if (hasWake && hasStop) {
+    _jarvisSay('Tudo bem! Estou em standby.');
+    _setOverlay('show', '✅ Jarvis desativado', '');
+    setTimeout(() => _stopListening(), 800);
+    return;
+  }
+
+  // Processa comando normal (contém 'jarvis' e não está ocupado)
+  if (hasWake && !_isBusy) {
     _isBusy = true;
+    _stopMicrophone(); // Desliga o microfone imediatamente
     _updateJarvisUI('processing');
     _setOverlay('show', '<span class="jarvis-processing-txt">⚡ Processando...</span>', final.trim());
     _interpretCommand(final.trim());
@@ -128,46 +221,48 @@ function _onSpeechEnd() {
   }
 }
 
-// ── Interpretação via Gemini ──────────────────────────────────
+// ── Interpretação via Groq ────────────────────────────────────
 async function _interpretCommand(text) {
-  const systemPrompt = `Você é o Jarvis, um assistente de controle de entregas.
+  const systemPrompt = `Você é o Jarvis, assistente de voz do Cockpit de Entregas.
 O usuário falou: "${text}"
 
-Analise o comando e retorne SOMENTE um JSON válido com uma das seguintes ações:
+Seu trabalho é gerar um código Javascript curto que controle a página web de acordo com o comando do usuário, junto com a fala de confirmação do assistente.
 
-1. Alterar status de pedido:
-{"action":"update_status","pedido":"NUMERO_DO_PEDIDO","status":"NOME_DO_STATUS"}
+Retorne SOMENTE um JSON válido com esta estrutura:
+{
+  "code": "código javascript válido para ser executado com eval()",
+  "speech": "resposta por voz curta em português (máx 15 palavras)"
+}
 
-2. Consultar status de pedido:
-{"action":"query_status","pedido":"NUMERO_DO_PEDIDO"}
+APIs e Funções Globais Disponíveis na página:
+1. jarvisHelpers.updateStatus(pedido, status)
+   - Status exatos: "Pendente", "Em separação", "Separado", "Aguardando peça", "Em manutenção", "Agendado", "Em Rota", "Entregue", "Concluído", "Retirado", "Cancelado".
+2. jarvisHelpers.viewPedido(pedido) -> Abre visualização detalhada do pedido
+3. jarvisHelpers.editPedido(pedido) -> Abre modal de edição do pedido
+4. jarvisHelpers.deletePedido(pedido) -> Abre diálogo para deletar o pedido
+5. jarvisHelpers.agendarAguardando(pedido) -> Agenda um pedido que está na lista de espera
+6. jarvisHelpers.search(texto) -> Busca por texto/cliente/motorista
+7. jarvisHelpers.filterStatus(status) -> Filtra por status
+8. jarvisHelpers.clearAll() -> Limpa todos os filtros de busca/status
+9. switchTab('cronograma' | 'arquivo') -> Muda de aba
+10. toggleTheme() -> Alterna tema do site (escuro/claro)
+11. openAddModal() -> Abre tela para criar novo pedido do zero
+12. toggleFullscreenElement('#tableWrap', 'btnFullscreen', 'fullscreenIcon') -> Tela cheia
 
-3. Buscar pedidos (por cliente, rota, placa ou número):
-{"action":"search","query":"TERMO_DE_BUSCA"}
+Variáveis Globais que você pode ler se precisar:
+- allRows: array contendo todos os pedidos atuais { id, pedido, cliente, motorista, rota, placa, status }
+- aguardandoList: array de pedidos aguardando agendamento { id, pedido, cliente }
+- activeTab: string 'cronograma' ou 'arquivo'
 
-4. Comando não reconhecido:
-{"action":"unknown","message":"MENSAGEM_AMIGAVEL_EXPLICANDO_O_QUE_NAO_ENTENDEU"}
+Regras de Geração do Código:
+- Mantenha o código curto e direto.
+- Se o usuário falar "cancelar", "fechar", "sair" sem especificar um pedido, você pode chamar "closeModal('rowModal'); closeModal('viewModal'); closeModal('deleteModal');".
+- Para alterar tema: "toggleTheme();"
+- Para criar novo registro: "openAddModal();"
+- Para limpar a busca/filtro: "jarvisHelpers.clearAll();"
+- Para ir para tela cheia: "toggleFullscreenElement('#tableWrap', 'btnFullscreen', 'fullscreenIcon');"
 
-Status válidos (use EXATAMENTE estes nomes):
-- Pendente
-- Em separação
-- Separado
-- Aguardando peça
-- Em manutenção
-- Agendado
-- Em Rota
-- Entregue
-- Concluído
-- Retirado
-- Cancelado
-
-Regras:
-- Extraia apenas o número do pedido (sem letras, a não ser que faça parte do código)
-- Normalize o status para o nome mais próximo da lista acima
-- Se o usuário disse "em rota", "a caminho", "saiu para entrega" → use "Em Rota"
-- Se disse "entregue", "entregou", "chegou" → use "Entregue"
-- Se disse "cancelado", "cancela" → use "Cancelado"
-- Se disse "pendente", "aguardando" → use "Pendente"
-- Retorne SOMENTE o JSON, sem markdown, sem explicações.`;
+Retorne APENAS o JSON, sem markdown ou explicações.`;
 
   try {
     const res = await fetch(
@@ -236,124 +331,52 @@ Regras:
     showToast('Erro de conexão ao processar o comando.', 'error');
   } finally {
     _isBusy = false;
-    _updateJarvisUI(_isListening ? 'listening' : 'off');
-    if (_isListening) {
-      setTimeout(() => _setOverlay('show', 'Ouvindo... diga <strong>Jarvis</strong> seguido do comando', ''), 3500);
-    }
+    // Fecha o overlay após 5 segundos
+    setTimeout(() => {
+      if (!_isBusy && !_isListening) {
+        _setOverlay('hide');
+      }
+    }, 5000);
   }
 }
 
 // ── Execução de ações ─────────────────────────────────────────
 async function _executeAction(action, originalText) {
-  switch (action.action) {
+  // Ação especial para parar
+  if (action.action === 'stop') {
+    _jarvisSay('Entendido! Estou em standby.');
+    _setOverlay('show', '✅ Até logo!', originalText);
+    setTimeout(() => _stopListening(), 800);
+    return;
+  }
 
-    // ── Alterar status ────────────────────────────────────────
-    case 'update_status': {
-      const pedido = String(action.pedido || '').trim();
-      const status = String(action.status || '').trim();
-
-      if (!pedido) {
-        _jarvisSay(`Não identifiquei o número do pedido no comando.`);
-        _setOverlay('show', '⚠️ Número do pedido não encontrado', originalText);
-        return;
+  // Executa o código javascript gerado pela IA
+  if (action.code) {
+    console.log('%c🏃 Executando código Jarvis:', 'color:#a78bfa', action.code);
+    try {
+      if (action.speech) {
+        _jarvisSay(action.speech);
+        _setOverlay('show', `🤖 <em>${action.speech}</em>`, originalText);
       }
 
-      if (!STATUS_OPTIONS.includes(status)) {
-        _jarvisSay(`Status "${status}" não reconhecido.`);
-        _setOverlay('show', `⚠️ Status inválido: "${status}"`, originalText);
-        return;
+      // Executa o código javascript gerado dinamicamente
+      const result = eval(action.code);
+      if (result instanceof Promise) {
+        await result;
       }
-
-      _setOverlay('show', `🔄 Atualizando pedido <strong>${pedido}</strong> → <strong>${status}</strong>...`, originalText);
-
-      const { data, error } = await db
-        .from('cronograma')
-        .update({ status })
-        .eq('pedido', pedido)
-        .select();
-
-      if (error) {
-        showToast('Erro ao atualizar: ' + error.message, 'error');
-        _setOverlay('show', '❌ Erro ao atualizar no banco', originalText);
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        _jarvisSay(`Pedido ${pedido} não encontrado.`);
-        _setOverlay('show', `⚠️ Pedido <strong>${pedido}</strong> não encontrado`, originalText);
-        showToast(`Pedido ${pedido} não encontrado no cronograma.`, 'warning');
-        return;
-      }
-
-      _jarvisSay(`Certo! Status do pedido ${pedido} atualizado para ${status}.`);
-      _setOverlay('show', `✅ Pedido <strong>${pedido}</strong> → <strong>${status}</strong>`, originalText);
-      showToast(`✅ Pedido ${pedido} → ${status}`, 'success');
-      await loadCronograma();
-      break;
+    } catch (err) {
+      console.error('Erro ao executar ação do Jarvis:', err);
+      showToast('Erro ao executar comando.', 'error');
+      _setOverlay('show', '❌ Erro ao executar ação no site', originalText);
     }
-
-    // ── Consultar status ──────────────────────────────────────
-    case 'query_status': {
-      const pedido = String(action.pedido || '').trim();
-
-      if (!pedido) {
-        _jarvisSay(`Não identifiquei o número do pedido.`);
-        _setOverlay('show', '⚠️ Número do pedido não encontrado', originalText);
-        return;
-      }
-
-      _setOverlay('show', `🔍 Consultando pedido <strong>${pedido}</strong>...`, originalText);
-
-      const { data, error } = await db
-        .from('cronograma')
-        .select('pedido, cliente, status')
-        .eq('pedido', pedido)
-        .limit(1);
-
-      if (error || !data || data.length === 0) {
-        _jarvisSay(`Pedido ${pedido} não encontrado.`);
-        _setOverlay('show', `⚠️ Pedido <strong>${pedido}</strong> não encontrado`, originalText);
-        showToast(`Pedido ${pedido} não encontrado.`, 'warning');
-        return;
-      }
-
-      const r = data[0];
-      _jarvisSay(`O pedido ${pedido} do cliente ${r.cliente || 'desconhecido'} está com status ${r.status}.`);
-      _setOverlay('show', `📦 Pedido <strong>${pedido}</strong>: <strong>${r.status}</strong>${r.cliente ? ` — ${r.cliente}` : ''}`, originalText);
-      showToast(`Pedido ${pedido}: ${r.status}`, 'info');
-      break;
-    }
-
-    // ── Busca ─────────────────────────────────────────────────
-    case 'search': {
-      const query = String(action.query || '').trim();
-      if (!query) {
-        _jarvisSay(`Não identifiquei o termo de busca.`);
-        return;
-      }
-
-      // Aplica busca no campo de texto do filtro e dispara applyFilters
-      const searchInput = document.getElementById('searchInput');
-      if (searchInput) {
-        searchInput.value = query;
-        applyFilters();
-      }
-
-      _jarvisSay(`Mostrando resultados para ${query}.`);
-      _setOverlay('show', `🔍 Buscando: <strong>${query}</strong>`, originalText);
-      showToast(`🔍 Filtro aplicado: "${query}"`, 'info');
-      break;
-    }
-
-    // ── Comando não reconhecido ───────────────────────────────
-    case 'unknown':
-    default: {
-      const msg = action.message || 'Comando não reconhecido.';
-      _jarvisSay(msg);
-      _setOverlay('show', `❓ ${msg}`, originalText);
-      showToast(`Jarvis: ${msg}`, 'warning');
-      break;
-    }
+  } else if (action.action === 'unknown') {
+    const msg = action.message || 'Comando não reconhecido.';
+    _jarvisSay(msg);
+    _setOverlay('show', `❓ ${msg}`, originalText);
+    showToast(`Jarvis: ${msg}`, 'warning');
+  } else {
+    // Fallback genérico para tratar comandos não-nativos antigos
+    _setOverlay('show', '❓ Comando não interpretado corretamente', originalText);
   }
 }
 
