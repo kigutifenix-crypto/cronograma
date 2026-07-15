@@ -181,23 +181,7 @@ function _onSpeechResult(event) {
 
   if (!final) return;
 
-  // ── Comandos de parar (sem precisar da IA) ───────────────────
-  const STOP_WORDS = ['parar', 'para de ouvir', 'desliga', 'desligar',
-                      'off', 'stop', 'chega', 'obrigado jarvis', 'pode parar', 'tchau jarvis'];
   const hasWake = final.toLowerCase().includes(JARVIS_WAKE_WORD);
-  const hasStop = STOP_WORDS.some(w => {
-    // Garante que a palavra de stop é uma correspondência exata de palavra ou frase
-    // para não pegar partes de palavras
-    const regex = new RegExp(`\\b${w}\\b`, 'i');
-    return regex.test(final);
-  });
-
-  if (hasWake && hasStop) {
-    _jarvisSay('Tudo bem! Estou em standby.');
-    _setOverlay('show', '✅ Jarvis desativado', '');
-    setTimeout(() => _stopListening(), 800);
-    return;
-  }
 
   // Processa comando normal (contém 'jarvis' e não está ocupado)
   if (hasWake && !_isBusy) {
