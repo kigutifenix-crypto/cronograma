@@ -258,8 +258,22 @@ function renderAguardando() {
 
 // ── Quick Status (clique no badge) ────────────────────────────
 function quickStatus(id, currentStatus) {
+  // Status que "arquivam" o registro (tiram da aba Cronograma)
+  const BLOCKED = ARCHIVED_STATUS;
+
+  // Se o registro já está arquivado (aba Arquivo), não bloqueia
+  const isCurrentlyArchived = BLOCKED.includes(currentStatus);
+
+  // Calcula o próximo status no ciclo
   const idx = STATUS_OPTIONS.indexOf(currentStatus);
-  const next = STATUS_OPTIONS[(idx + 1) % STATUS_OPTIONS.length];
+  let next = STATUS_OPTIONS[(idx + 1) % STATUS_OPTIONS.length];
+
+  // Se estamos na aba Cronograma e o próximo status é um status de arquivo,
+  // pula para o primeiro status que não é de arquivo
+  if (!isCurrentlyArchived && BLOCKED.includes(next)) {
+    showToast('Para marcar como Entregue/Concluído/Retirado/Cancelado, use o botão Editar.', 'warning');
+    return;
+  }
 
   db.from('cronograma').update({ status: next }).eq('id', id)
     .then(({ error }) => {
