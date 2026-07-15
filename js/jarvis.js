@@ -244,7 +244,10 @@ Variáveis Globais que você pode ler se precisar:
 - activeTab: string 'cronograma' ou 'arquivo'
 
 Regras de Geração do Código:
-- Mantenha o código curto e direto.
+- NUNCA utilize variáveis não declaradas como 'pedido', 'status', 'rota' etc.
+- Você deve passar os valores reais DIRETAMENTE como strings, por exemplo:
+  Correto: jarvisHelpers.updateStatus('5909', 'Cancelado');
+  Incorreto: jarvisHelpers.updateStatus(pedido, status); (gerará erro de variável indefinida!)
 - Se o usuário falar "cancelar", "fechar", "sair" sem especificar um pedido, você pode chamar "closeModal('rowModal'); closeModal('viewModal'); closeModal('deleteModal');".
 - Para alterar tema: "toggleTheme();"
 - Para criar novo registro: "openAddModal();"
