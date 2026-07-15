@@ -86,6 +86,126 @@ function initJarvis() {
         await loadCronograma();
       }
     },
+    createPedido: async (dados) => {
+      let dataFinal = dados.data || null;
+      if (dataFinal && dataFinal.includes('/')) {
+        const parts = dataFinal.split('/');
+        if (parts.length === 3) {
+          dataFinal = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+      }
+      const payload = {
+        data: dataFinal,
+        pedido: dados.pedido || '',
+        cliente: dados.cliente || '',
+        rota: dados.rota || '',
+        placa: (dados.placa || '').toUpperCase(),
+        motorista: dados.motorista || '',
+        frete: (dados.frete || 'CIF').toUpperCase(),
+        status: dados.status || 'Pendente',
+        observacoes: dados.observacoes || '',
+        criado_por: currentUser.id
+      };
+      const { error } = await db.from('cronograma').insert(payload);
+      if (error) {
+        showToast(`Erro ao criar pedido: ${error.message}`, 'error');
+      } else {
+        showToast(`Pedido ${payload.pedido} criado`, 'success');
+        _jarvisSay(`Pedido ${payload.pedido} criado no cronograma.`);
+        await loadCronograma();
+      }
+    },
+    addAguardando: async (pedido, cliente, observacoes = '') => {
+      const payload = {
+        pedido: pedido || '',
+        cliente: cliente || '',
+        observacoes: observacoes || '',
+        adicionado_por: currentUser.id
+      };
+      const { error } = await db.from('aguardando').insert(payload);
+      if (error) {
+        showToast(`Erro ao adicionar: ${error.message}`, 'error');
+      } else {
+        showToast(`Pedido ${pedido} adicionado à espera`, 'success');
+        _jarvisSay(`Pedido ${pedido} do cliente ${cliente} adicionado à lista de espera.`);
+        await loadAguardando();
+      }
+    },
+    deleteAguardando: async (pedido) => {
+      const item = aguardandoList.find(i => String(i.pedido) === String(pedido));
+      if (!item) {
+        showToast(`Pedido ${pedido} não está na espera`, 'warning');
+        _jarvisSay(`Não encontrei o pedido ${pedido} na lista de espera.`);
+        return;
+      }
+      const { error } = await db.from('aguardando').delete().eq('id', item.id);
+      if (error) {
+        showToast(`Erro ao excluir: ${error.message}`, 'error');
+      } else {
+        showToast(`Pedido ${pedido} removido da espera`, 'success');
+        _jarvisSay(`Removi o pedido ${pedido} da lista de espera.`);
+        await loadAguardando();
+      }
+    },
+    agendarAguardandoDireto: async (pedido, dados) => {
+      const item = aguardandoList.find(i => String(i.pedido) === String(pedido));
+      if (!item) {
+        showToast(`Pedido ${pedido} não encontrado na espera`, 'warning');
+        _jarvisSay(`Não encontrei o pedido ${pedido} na lista de espera.`);
+        return;
+      }
+
+      let dataFinal = dados.data || null;
+      if (dataFinal && dataFinal.includes('/')) {
+        const parts = dataFinal.split('/');
+        if (parts.length === 3) {
+          dataFinal = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+      }
+
+      const payload = {
+        data: dataFinal,
+        pedido: item.pedido || '',
+        cliente: item.cliente || '',
+        rota: dados.rota || '',
+        placa: (dados.placa || '').toUpperCase(),
+        motorista: dados.motorista || '',
+        frete: (dados.frete || 'CIF').toUpperCase(),
+        status: dados.status || 'Pendente',
+        observacoes: dados.observacoes || item.observacoes || '',
+        criado_por: currentUser.id
+      };
+
+      const { error: insError } = await db.from('cronograma').insert(payload);
+      if (insError) {
+        showToast(`Erro ao agendar: ${insError.message}`, 'error');
+        return;
+      }
+      
+      await db.from('aguardando').delete().eq('id', item.id);
+      showToast(`Pedido ${pedido} agendado com sucesso`, 'success');
+      _jarvisSay(`Pedido ${pedido} promovido e agendado no cronograma.`);
+      await loadCronograma();
+      await loadAguardando();
+    },
+    filterDateRange: (de, ate) => {
+      let deFinal = de;
+      let ateFinal = ate;
+      if (de && de.includes('/')) {
+        const parts = de.split('/');
+        deFinal = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      if (ate && ate.includes('/')) {
+        const parts = ate.split('/');
+        ateFinal = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      const elDe = document.getElementById('dateFrom');
+      const elAte = document.getElementById('dateTo');
+      if (elDe) elDe.value = deFinal || '';
+      if (elAte) elAte.value = ateFinal || '';
+      applyFilters();
+      _jarvisSay(`Filtrando entregas de ${de || 'início'} até ${ate || 'fim'}.`);
+    },
     viewPedido: (pedido) => {
       const row = allRows.find(r => String(r.pedido) === String(pedido));
       if (!row) {
@@ -125,6 +245,9 @@ function initJarvis() {
       }
       agendarItem(item.id, item.pedido, item.cliente);
     },
+    openAddAguardandoModal: () => {
+      openAddAguardando();
+    },
     search: (query) => {
       const el = document.getElementById('searchInput');
       if (el) {
@@ -141,6 +264,11 @@ function initJarvis() {
     },
     clearAll: () => {
       clearFilters();
+      const elDe = document.getElementById('dateFrom');
+      const elAte = document.getElementById('dateTo');
+      if (elDe) elDe.value = '';
+      if (elAte) elAte.value = '';
+      applyFilters();
     }
   };
 }
@@ -258,17 +386,25 @@ APIs e Funções Globais Disponíveis na página:
 2. jarvisHelpers.updateField(pedido, campo, valor)
    - Permite alterar QUALQUER campo de um pedido. Campos válidos: 'data', 'motorista', 'rota', 'placa', 'observacoes', 'frete', 'cliente'.
    - O 'valor' da data deve ser passado no formato brasileiro 'DD/MM/YYYY'.
-3. jarvisHelpers.viewPedido(pedido) -> Abre visualização detalhada do pedido
-4. jarvisHelpers.editPedido(pedido) -> Abre modal de edição do pedido
-5. jarvisHelpers.deletePedido(pedido) -> Abre diálogo para deletar o pedido
-6. jarvisHelpers.agendarAguardando(pedido) -> Agenda um pedido que está na lista de espera
-7. jarvisHelpers.search(texto) -> Busca por texto/cliente/motorista
-8. jarvisHelpers.filterStatus(status) -> Filtra por status
-9. jarvisHelpers.clearAll() -> Limpa todos os filtros de busca/status
-10. switchTab('cronograma' | 'arquivo') -> Muda de aba
-11. toggleTheme() -> Alterna tema do site (escuro/claro)
-12. openAddModal() -> Abre tela para criar novo pedido do zero
-13. toggleFullscreenElement('#tableWrap', 'btnFullscreen', 'fullscreenIcon') -> Tela cheia
+3. jarvisHelpers.createPedido(dados)
+   - Cria um novo pedido direto no cronograma. O objeto 'dados' pode ter: { pedido, cliente, data, motorista, rota, placa, status, frete, observacoes }.
+4. jarvisHelpers.addAguardando(pedido, cliente, observacoes) -> Adiciona um pedido novo à lista de espera/aguardando.
+5. jarvisHelpers.deleteAguardando(pedido) -> Exclui um pedido da lista de espera.
+6. jarvisHelpers.agendarAguardandoDireto(pedido, dadosAgendamento)
+   - Tira um pedido da lista de espera e cria no cronograma com dados: { data, motorista, rota, placa, status, frete, observacoes }.
+7. jarvisHelpers.filterDateRange(de, ate) -> Filtra o cronograma pelo intervalo de datas brasileiro (ex: '10/07/2026', '15/07/2026').
+8. jarvisHelpers.viewPedido(pedido) -> Abre visualização detalhada do pedido
+9. jarvisHelpers.editPedido(pedido) -> Abre modal de edição do pedido
+10. jarvisHelpers.deletePedido(pedido) -> Abre diálogo para deletar o pedido
+11. jarvisHelpers.agendarAguardando(pedido) -> Abre o modal de agendamento manual de um item da espera.
+12. jarvisHelpers.openAddAguardandoModal() -> Abre o formulário de inclusão de item em aguardando.
+13. jarvisHelpers.search(texto) -> Busca por texto/cliente/motorista
+14. jarvisHelpers.filterStatus(status) -> Filtra por status
+15. jarvisHelpers.clearAll() -> Limpa todos os filtros de busca/status/data
+16. switchTab('cronograma' | 'arquivo') -> Muda de aba
+17. toggleTheme() -> Alterna tema do site (escuro/claro)
+18. openAddModal() -> Abre tela para criar novo pedido do zero
+19. toggleFullscreenElement('#tableWrap', 'btnFullscreen', 'fullscreenIcon') -> Tela cheia
 
 Variáveis Globais que você pode ler se precisar:
 - allRows: array contendo todos os pedidos atuais. Cada pedido é um objeto com estes campos exatos:
@@ -288,6 +424,16 @@ Regras de Geração do Código:
 - Passe sempre os valores diretamente como strings ou números nas chamadas.
 - Para responder perguntas gerais sobre os dados de um pedido (data, motorista, rota, observações, cliente etc.), escreva um código JS que localize o pedido em allRows e use a função _jarvisSay() para falar a resposta exata.
 - EXEMPLOS DE CÓDIGO CORRETOS PARA CADA INTENÇÃO:
+  * Para criar um novo pedido no cronograma (ex: pedido 7000 para cliente Acme no dia 20/07/2026):
+    "code": "jarvisHelpers.createPedido({ pedido: '7000', cliente: 'Acme', data: '20/07/2026', motorista: 'Carlos' });", "speech": "Criando pedido 7000 no cronograma."
+  * Para adicionar à lista de espera/aguardando (ex: pedido 8000 para cliente Fenix):
+    "code": "jarvisHelpers.addAguardando('8000', 'Fenix', 'Urgente');", "speech": "Adicionando pedido 8000 à lista de espera."
+  * Para agendar/promover direto um pedido que está em aguardando (ex: pedido 8000 para o dia 22/07/2026 com motorista Carlos):
+    "code": "jarvisHelpers.agendarAguardandoDireto('8000', { data: '22/07/2026', motorista: 'Carlos' });", "speech": "Agendando pedido da lista de espera."
+  * Para excluir do aguardando/espera (ex: pedido 8000):
+    "code": "jarvisHelpers.deleteAguardando('8000');", "speech": "Removendo pedido 8000 da lista de espera."
+  * Para filtrar entregas de 10/07/2026 a 15/07/2026:
+    "code": "jarvisHelpers.filterDateRange('10/07/2026', '15/07/2026');", "speech": "Filtrando período de 10 a 15 de julho."
   * Para alterar a data do pedido 5909 para 20/07/2026:
     "code": "jarvisHelpers.updateField('5909', 'data', '20/07/2026');", "speech": "Alterando a data do pedido 5909 para 20 de julho."
   * Para alterar o motorista do pedido 5909 para Carlos:
