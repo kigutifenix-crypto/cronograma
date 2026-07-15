@@ -4,7 +4,7 @@
 
 const JARVIS_KEY_STORAGE  = 'jarvis-gemini-key';
 const JARVIS_WAKE_WORD    = 'jarvis';
-const GEMINI_MODEL        = 'gemini-1.5-flash-latest';
+const GEMINI_MODEL        = 'gemini-2.0-flash';
 const GEMINI_API_BASE     = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 // ── Estado interno ────────────────────────────────────────────
