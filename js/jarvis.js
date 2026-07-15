@@ -2,11 +2,11 @@
 // JARVIS.JS — Assistente de Voz com IA (Gemini + Web Speech)
 // ============================================================
 
-const JARVIS_KEY_STORAGE  = 'jarvis-gemini-key';
+const JARVIS_KEY_STORAGE  = 'jarvis-groq-key';
 const JARVIS_WAKE_WORD    = 'jarvis';
-const GEMINI_MODEL        = 'gemini-flash-latest';
-const GEMINI_API_BASE     = 'https://generativelanguage.googleapis.com/v1beta/models';
-const GEMINI_DEFAULT_KEY  = 'AQ.Ab8RN6JaDCzc6f5UleoUgREx83ek2r5iqbyYx02FryBHtvMhIA'; // chave padrão aprovada
+const GROQ_MODEL          = 'llama-3.1-8b-instant';
+const GROQ_API_BASE       = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_DEFAULT_KEY    = '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';
 
 // ── Estado interno ────────────────────────────────────────────
 let _recognition   = null;
@@ -20,7 +20,7 @@ function initJarvis() {
   // Carrega key: localStorage > jarvis-config.js (local) > chave padrão embutida
   _geminiKey = localStorage.getItem(JARVIS_KEY_STORAGE)
             || (window.JARVIS_GEMINI_KEY || '')
-            || GEMINI_DEFAULT_KEY;
+            || GROQ_DEFAULT_KEY;
 
   // Verifica suporte à Web Speech API
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -171,16 +171,22 @@ Regras:
 
   try {
     const res = await fetch(
-      `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent`,
+      GROQ_API_BASE,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-goog-api-key': _geminiKey
+          'Authorization': `Bearer ${_geminiKey}`
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: systemPrompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 256 }
+          model: GROQ_MODEL,
+          messages: [
+            { role: 'system', content: 'Você é um assistente que retorna APENAS JSON válido, sem markdown, sem explicações.' },
+            { role: 'user',   content: systemPrompt }
+          ],
+          temperature: 0.1,
+          max_tokens: 256,
+          response_format: { type: 'json_object' }
         })
       }
     );
@@ -201,12 +207,27 @@ Regras:
     }
 
     const data  = await res.json();
-    const raw   = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    const clean = raw.replace(/```json?/g, '').replace(/```/g, '').trim();
+    // Groq usa formato OpenAI: choices[0].message.content
+    const raw   = data?.choices?.[0]?.message?.content || '{}';
+    const finishReason = data?.choices?.[0]?.finish_reason;
+
+    console.log('%c🤖 Groq respondeu:', 'color:#a78bfa;font-weight:bold', raw);
+    console.log('%c📋 finishReason:', 'color:#a78bfa', finishReason, '| chars:', raw.length);
+
+    // Tenta extrair JSON: remove markdown, depois tenta regex para pegar { ... }
+    let clean = raw.replace(/```json?/gi, '').replace(/```/g, '').trim();
+    // Fallback: extrai o primeiro bloco JSON da resposta
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
+    if (jsonMatch) clean = jsonMatch[0];
 
     let action;
-    try { action = JSON.parse(clean); }
-    catch (_) { action = { action: 'unknown', message: 'Não consegui interpretar o comando.' }; }
+    try {
+      action = JSON.parse(clean);
+      console.log('%c✅ Ação interpretada:', 'color:#4ade80;font-weight:bold', action);
+    } catch (e) {
+      console.warn('%c⚠️ JSON parse falhou. Resposta bruta:', 'color:#fbbf24', raw);
+      action = { action: 'unknown', message: 'Não consegui interpretar o comando.' };
+    }
 
     await _executeAction(action, text);
 
@@ -462,3 +483,29 @@ function removeJarvisKey() {
 function closeJarvisOverlay() {
   _setOverlay('hide');
 }
+
+// ── Teste via console do navegador ───────────────────────────
+// Use no console (F12): jarvisTest("altere o status do pedido 5909 para entregue")
+async function jarvisTest(texto) {
+  if (!texto) {
+    console.info(
+      '%c🎤 JARVIS TEST\n' +
+      '%cUso: jarvisTest("altere o status do pedido 5909 para entregue")\n' +
+      'Outros exemplos:\n' +
+      '  jarvisTest("qual o status do pedido 1234")\n' +
+      '  jarvisTest("busca pedidos do cliente João")',
+      'color:#a78bfa;font-weight:bold;font-size:14px',
+      'color:#c4b5fd;font-size:12px'
+    );
+    return;
+  }
+
+  console.log('%c🎤 Jarvis Test → ' + texto, 'color:#a78bfa;font-weight:600');
+  _setOverlay('show', '⚡ Testando comando...', texto);
+  _isBusy = true;
+  await _interpretCommand('jarvis ' + texto);
+  _isBusy = false;
+}
+
+// Expõe globalmente para uso no console
+window.jarvisTest = jarvisTest;
