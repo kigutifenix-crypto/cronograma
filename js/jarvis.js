@@ -46,18 +46,43 @@ function initJarvis() {
   // Inicializa helpers globais para o Jarvis executar ações no DOM/Supabase
   window.jarvisHelpers = {
     updateStatus: async (pedido, status) => {
+      await jarvisHelpers.updateField(pedido, 'status', status);
+    },
+    updateField: async (pedido, campo, valor) => {
       const row = allRows.find(r => String(r.pedido) === String(pedido));
       if (!row) {
         showToast(`Pedido ${pedido} não encontrado`, 'warning');
         _jarvisSay(`Não encontrei o pedido ${pedido}.`);
         return;
       }
-      const { error } = await db.from('cronograma').update({ status }).eq('id', row.id);
+      
+      const camposValidos = ['status', 'data', 'motorista', 'rota', 'placa', 'observacoes', 'frete', 'cliente'];
+      if (!camposValidos.includes(campo)) {
+        showToast(`Campo ${campo} inválido`, 'error');
+        return;
+      }
+
+      // Converte data brasileira (DD/MM/YYYY) para ISO (YYYY-MM-DD) do banco
+      let valorFinal = valor;
+      if (campo === 'data') {
+        if (valor.includes('/')) {
+          const parts = valor.split('/');
+          if (parts.length === 3) {
+            valorFinal = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          }
+        }
+      }
+
+      const payload = {};
+      payload[campo] = valorFinal;
+
+      const { error } = await db.from('cronograma').update(payload).eq('id', row.id);
       if (error) {
-        showToast('Erro ao atualizar status', 'error');
+        showToast(`Erro ao atualizar ${campo}: ${error.message}`, 'error');
       } else {
-        showToast(`Pedido ${pedido} atualizado para ${status}`, 'success');
-        _jarvisSay(`Pedido ${pedido} atualizado para ${status}.`);
+        const valorExibido = campo === 'data' ? fmtDate(valorFinal) : valorFinal;
+        showToast(`Pedido ${pedido}: ${campo} atualizado para ${valorExibido}`, 'success');
+        _jarvisSay(`Certo! ${campo} do pedido ${pedido} alterado para ${valorExibido}.`);
         await loadCronograma();
       }
     },
@@ -230,17 +255,20 @@ Retorne SOMENTE um JSON válido com esta estrutura:
 APIs e Funções Globais Disponíveis na página:
 1. jarvisHelpers.updateStatus(pedido, status)
    - Status exatos: "Pendente", "Em separação", "Separado", "Aguardando peça", "Em manutenção", "Agendado", "Em Rota", "Entregue", "Concluído", "Retirado", "Cancelado".
-2. jarvisHelpers.viewPedido(pedido) -> Abre visualização detalhada do pedido
-3. jarvisHelpers.editPedido(pedido) -> Abre modal de edição do pedido
-4. jarvisHelpers.deletePedido(pedido) -> Abre diálogo para deletar o pedido
-5. jarvisHelpers.agendarAguardando(pedido) -> Agenda um pedido que está na lista de espera
-6. jarvisHelpers.search(texto) -> Busca por texto/cliente/motorista
-7. jarvisHelpers.filterStatus(status) -> Filtra por status
-8. jarvisHelpers.clearAll() -> Limpa todos os filtros de busca/status
-9. switchTab('cronograma' | 'arquivo') -> Muda de aba
-10. toggleTheme() -> Alterna tema do site (escuro/claro)
-11. openAddModal() -> Abre tela para criar novo pedido do zero
-12. toggleFullscreenElement('#tableWrap', 'btnFullscreen', 'fullscreenIcon') -> Tela cheia
+2. jarvisHelpers.updateField(pedido, campo, valor)
+   - Permite alterar QUALQUER campo de um pedido. Campos válidos: 'data', 'motorista', 'rota', 'placa', 'observacoes', 'frete', 'cliente'.
+   - O 'valor' da data deve ser passado no formato brasileiro 'DD/MM/YYYY'.
+3. jarvisHelpers.viewPedido(pedido) -> Abre visualização detalhada do pedido
+4. jarvisHelpers.editPedido(pedido) -> Abre modal de edição do pedido
+5. jarvisHelpers.deletePedido(pedido) -> Abre diálogo para deletar o pedido
+6. jarvisHelpers.agendarAguardando(pedido) -> Agenda um pedido que está na lista de espera
+7. jarvisHelpers.search(texto) -> Busca por texto/cliente/motorista
+8. jarvisHelpers.filterStatus(status) -> Filtra por status
+9. jarvisHelpers.clearAll() -> Limpa todos os filtros de busca/status
+10. switchTab('cronograma' | 'arquivo') -> Muda de aba
+11. toggleTheme() -> Alterna tema do site (escuro/claro)
+12. openAddModal() -> Abre tela para criar novo pedido do zero
+13. toggleFullscreenElement('#tableWrap', 'btnFullscreen', 'fullscreenIcon') -> Tela cheia
 
 Variáveis Globais que você pode ler se precisar:
 - allRows: array contendo todos os pedidos atuais. Cada pedido é um objeto com estes campos exatos:
@@ -260,6 +288,10 @@ Regras de Geração do Código:
 - Passe sempre os valores diretamente como strings ou números nas chamadas.
 - Para responder perguntas gerais sobre os dados de um pedido (data, motorista, rota, observações, cliente etc.), escreva um código JS que localize o pedido em allRows e use a função _jarvisSay() para falar a resposta exata.
 - EXEMPLOS DE CÓDIGO CORRETOS PARA CADA INTENÇÃO:
+  * Para alterar a data do pedido 5909 para 20/07/2026:
+    "code": "jarvisHelpers.updateField('5909', 'data', '20/07/2026');", "speech": "Alterando a data do pedido 5909 para 20 de julho."
+  * Para alterar o motorista do pedido 5909 para Carlos:
+    "code": "jarvisHelpers.updateField('5909', 'motorista', 'Carlos');", "speech": "Alterando motorista do pedido 5909 para Carlos."
   * Para saber/perguntar a data do pedido 5909:
     "code": "const row = allRows.find(r => String(r.pedido) === '5909'); if (row) { _jarvisSay('A data do pedido 5909 é ' + fmtDate(row.data)); } else { _jarvisSay('Pedido 5909 não encontrado.'); }", "speech": "Buscando a data do pedido..."
   * Para saber/perguntar quem é o motorista do pedido 5909:
