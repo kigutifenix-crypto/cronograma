@@ -4,9 +4,9 @@
 
 const JARVIS_KEY_STORAGE  = 'jarvis-gemini-key';
 const JARVIS_WAKE_WORD    = 'jarvis';
-const GEMINI_MODEL        = 'gemini-2.0-flash';
+const GEMINI_MODEL        = 'gemini-flash-latest';
 const GEMINI_API_BASE     = 'https://generativelanguage.googleapis.com/v1beta/models';
-const GEMINI_DEFAULT_KEY  = 'AQ.Ab8RN6JxtIp37UvxjuC3m3sKAdL6s5tQXf9VCf8IQUOweGkyJA'; // chave padrão aprovada
+const GEMINI_DEFAULT_KEY  = 'AQ.Ab8RN6JaDCzc6f5UleoUgREx83ek2r5iqbyYx02FryBHtvMhIA'; // chave padrão aprovada
 
 // ── Estado interno ────────────────────────────────────────────
 let _recognition   = null;
@@ -171,10 +171,13 @@ Regras:
 
   try {
     const res = await fetch(
-      `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent?key=${_geminiKey}`,
+      `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': _geminiKey
+        },
         body: JSON.stringify({
           contents: [{ parts: [{ text: systemPrompt }] }],
           generationConfig: { temperature: 0.1, maxOutputTokens: 256 }
